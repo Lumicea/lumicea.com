@@ -93,10 +93,10 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    checkUser();
-    fetchNotifications();
-  }, []);
+useEffect(() => {
+  checkUser();
+  fetchNotifications();
+}, [checkUser, fetchNotifications]); // Added checkUser and fetchNotifications to the dependency array
 
   const checkUser = async () => {
     try {
