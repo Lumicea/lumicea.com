@@ -1,32 +1,32 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import { HomePage } from "./pages/home/index.tsx"; // Confirmed path 
-import { NotFoundPage } from "./pages/not-found/index.tsx"; // Confirmed path 
-import { CartPage } from "./pages/cart/index.tsx"; // Confirmed path 
-import { CheckoutPage } from "./pages/checkout/index.tsx"; // Confirmed path 
-import { CheckoutSuccessPage } from "./pages/checkout/success/index.tsx"; // Confirmed path 
-import { AboutPage } from "./pages/about.tsx"; // Confirmed path 
-import { BlogPage } from "./pages/blog.tsx"; // Confirmed path 
-import { ContactPage } from "./pages/contact.tsx"; // Confirmed path 
-import { CustomPage } from "./pages/custom.tsx"; // Confirmed path 
-import { GiftCardsPage } from "./pages/gift-cards.tsx"; // Confirmed path 
-import { CollectionsPage } from "./pages/collections.tsx"; // Confirmed path 
-import { SettingsPage } from "./pages/settings.tsx"; // Confirmed path 
-import { SizeGuidePage } from "./pages/size-guide.tsx"; // Confirmed path 
-import { LoginPage } from "./pages/auth/login.tsx"; // Confirmed path 
-import { SignupPage } from "./pages/auth/signup.tsx"; // Confirmed path 
-import { EarringsPage } from "./pages/categories/earrings.tsx"; // Confirmed path 
-import { NoseRingsPage } from "./pages/categories/nose-rings.tsx"; // Confirmed path 
-import { ProductDetailPage } from "./pages/products/detail.tsx"; // Confirmed path 
+import { HomePage } from "./pages/home/Home.tsx"; // Corrected: points to Home.tsx, not index.tsx 
+import { NotFoundPage } from "./pages/not-found/NotFound.tsx"; // Corrected: points to NotFound.tsx, not index.tsx 
+import { CartPage } from "./pages/cart/index.tsx"; // Appears correct from directory structure 
+import { CheckoutPage } from "./pages/checkout/index.tsx"; // Appears correct from directory structure 
+import { CheckoutSuccessPage } from "./pages/checkout/success/index.tsx"; // Appears correct from directory structure 
+import { AboutPage } from "./pages/about.tsx"; // Appears correct from directory structure [cite: 4]
+import { BlogPage } from "./pages/blog.tsx"; // Appears correct from directory structure [cite: 4]
+import { ContactPage } from "./pages/contact.tsx"; // Appears correct from directory structure [cite: 4]
+import { CustomPage } from "./pages/custom.tsx"; // Appears correct from directory structure [cite: 4]
+import { GiftCardsPage } from "./pages/gift-cards.tsx"; // Appears correct from directory structure [cite: 4]
+import { CollectionsPage } from "./pages/collections.tsx"; // Appears correct from directory structure [cite: 4]
+import { SettingsPage } from "./pages/settings.tsx"; // Appears correct from directory structure [cite: 4]
+import { SizeGuidePage } from "./pages/size-guide.tsx"; // Appears correct from directory structure [cite: 4]
+import { LoginPage } from "./pages/auth/login.tsx"; // Appears correct from directory structure 
+import { SignupPage } from "./pages/auth/signup.tsx"; // Appears correct from directory structure 
+import { EarringsPage } from "./pages/categories/earrings.tsx"; // Appears correct from directory structure 
+import { NoseRingsPage } from "./pages/categories/nose-rings.tsx"; // Appears correct from directory structure 
+import { ProductDetailPage } from "./pages/products/detail.tsx"; // Appears correct from directory structure 
 
 // Admin Pages
-import { AdminDashboard } from "./pages/admin/dashboard/index.tsx"; // Confirmed path 
-import { AdminProductsPage } from "./pages/admin/products/index.tsx"; // Confirmed path 
-import { AdminOrdersPage } from "./pages/admin/orders/index.tsx"; // Confirmed path 
-import { AdminCustomersPage } from "./pages/admin/customers/index.tsx"; // Confirmed path 
-import { AdminPagesPage } from "./pages/admin/pages/index.tsx"; // Confirmed path 
-import { AdminBlogPage } from "./pages/admin/blog/index.tsx"; // Confirmed path 
+import { AdminDashboard } from "./pages/admin/dashboard/index.tsx"; // Appears correct from directory structure 
+import { AdminProductsPage } from "./pages/admin/products/index.tsx"; // Appears correct from directory structure 
+import { AdminOrdersPage } from "./pages/admin/orders/index.tsx"; // Appears correct from directory structure 
+import { AdminCustomersPage } from "./pages/admin/customers/index.tsx"; // Appears correct from directory structure 
+import { AdminPagesPage } from "./pages/admin/pages/index.tsx"; // Appears correct from directory structure 
+import { AdminBlogPage } from "./pages/admin/blog/index.tsx"; // Appears correct from directory structure 
 
 
 function App() {
