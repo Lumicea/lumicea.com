@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   Filter, 
-  MoreHorizontal, 
   Eye, 
   Package,
   Truck,
