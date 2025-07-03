@@ -14,19 +14,19 @@ import { GiftCardsPage } from "./lumicea-react/pages/gift-cards.tsx";
 import { CollectionsPage } from "./lumicea-react/pages/collections.tsx";
 import { SettingsPage } from "./lumicea-react/pages/settings.tsx";
 import { SizeGuidePage } from "./lumicea-react/pages/size-guide.tsx";
-import { LoginPage } from "./lumicea-react/pages/auth/Login.tsx";
-import { SignupPage } from "./lumicea-react/pages/auth/Signup.tsx";
+import { LoginPage } from "./lumicea-react/pages/auth/login.tsx";
+import { SignupPage } from "./lumicea-react/pages/auth/signup.tsx";
 import { EarringsPage } from "./lumicea-react/pages/categories/earrings.tsx";
 import { NoseRingsPage } from "./lumicea-react/pages/categories/nose-rings.tsx";
-import { ProductDetailPage } from "./lumicea-react/pages/products/Detail.tsx";
+import { ProductDetailPage } from "./lumicea-react/pages/products/detail.tsx";
 
 // Admin Pages
-import { AdminDashboard } from "./lumicea-react/pages/admin/dashboard/Dashboard.tsx";
-import { AdminProductsPage } from "./lumicea-react/pages/admin/products/Products.tsx";
-import { AdminOrdersPage } from "./lumicea-react/pages/admin/orders/Orders.tsx";
-import { AdminCustomersPage } from "./lumicea-react/pages/admin/customers/Customers.tsx";
-import { AdminPagesPage } from "./lumicea-react/pages/admin/pages/Pages.tsx";
-import { AdminBlogPage } from "./lumicea-react/pages/admin/blog/Blog.tsx";
+import { AdminDashboard } from "./lumicea-react/pages/admin/dashboard/index.tsx";
+import { AdminProductsPage } from "./lumicea-react/pages/admin/products/index.tsx";
+import { AdminOrdersPage } from "./lumicea-react/pages/admin/orders/index.tsx";
+import { AdminCustomersPage } from "./lumicea-react/pages/admin/customers/index.tsx";
+import { AdminPagesPage } from "./lumicea-react/pages/admin/pages/index.tsx";
+import { AdminBlogPage } from "./lumicea-react/pages/admin/blog/index.tsx";
 
 function App() {
   return (
