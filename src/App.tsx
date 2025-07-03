@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import { HomePage } from "./lumicea-react/pages/home/index.tsx";
+import { HomePage } from "./lumicea-react/pages/Home/index.tsx";
 import { NotFoundPage } from "./lumicea-react/pages/not-found/index.tsx";
 import { CartPage } from "./lumicea-react/pages/cart/index.tsx";
 import { CheckoutPage } from "./lumicea-react/pages/checkout/index.tsx";
