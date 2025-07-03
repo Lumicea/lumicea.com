@@ -15,7 +15,7 @@ import { CollectionsPage } from "./pages/collections.tsx";
 import { SettingsPage } from "./pages/settings.tsx";
 import { SizeGuidePage } from "./pages/size-guide.tsx";
 import { LoginPage } from "./pages/auth/Login.tsx";
-import { SignupPage } => "./pages/auth/Signup.tsx";
+import { SignupPage } from "./pages/auth/Signup.tsx";
 import { EarringsPage } from "./pages/categories/Earrings.tsx";
 import { NoseRingsPage } from "./pages/categories/NoseRings.tsx";
 import { ProductDetailPage } from "./pages/products/Detail.tsx";
