@@ -4,11 +4,14 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // Removed: root: './', // Vite will now correctly infer the root from the CWD
+  root: '.', // Explicitly setting the project root
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    outDir: 'dist' // Explicitly setting the output directory
+  }
 })
