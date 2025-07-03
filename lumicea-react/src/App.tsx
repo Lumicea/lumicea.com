@@ -5,6 +5,9 @@ import { HomePage } from "@/pages/home/index.tsx";
 import { NotFoundPage } from "@/pages/not-found/index.tsx";
 import { CartPage } from "@/pages/cart/index.tsx";
 import { CheckoutPage } from "@/pages/checkout/index.tsx";
+import { WishlistPage } from "@/pages/wishlist/index.tsx";
+import { SearchPage } from "@/pages/search/index.tsx";
+import { GiftCardsPage } from "@/pages/gift-cards/index.tsx";
 import { CheckoutSuccessPage } from "@/pages/checkout/success/index.tsx";
 import { AboutPage } from "@/pages/about.tsx";
 import { BlogPage } from "@/pages/blog.tsx";
@@ -16,6 +19,9 @@ import { SettingsPage } from "@/pages/settings.tsx";
 import { SizeGuidePage } from "@/pages/size-guide.tsx";
 import { LoginPage } from "@/pages/auth/login.tsx";
 import { SignupPage } from "@/pages/auth/signup.tsx";
+import { PrivacyPage } from "@/pages/legal/privacy.tsx";
+import { CookiesPage } from "@/pages/legal/cookies.tsx";
+import { TermsPage } from "@/pages/legal/terms.tsx";
 import { EarringsPage } from "@/pages/categories/earrings.tsx";
 import { NoseRingsPage } from "@/pages/categories/nose-rings.tsx";
 import { ProductDetailPage } from "@/pages/products/detail.tsx";
@@ -37,12 +43,18 @@ function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/gift-cards" element={<GiftCardsPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/custom" element={<CustomPage />} />
         <Route path="/gift-cards" element={<GiftCardsPage />} />
         <Route path="/collections" element={<CollectionsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/legal/privacy" element={<PrivacyPage />} />
+        <Route path="/legal/cookies" element={<CookiesPage />} />
+        <Route path="/legal/terms" element={<TermsPage />} />
         <Route path="/size-guide" element={<SizeGuidePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

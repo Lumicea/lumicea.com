@@ -35,6 +35,20 @@ const products = [
 ];
 
 export function NoseRingsPage() {
+  // Add gift card product to the products array
+  const allProducts = [
+    ...products,
+    {
+      id: 'gift-card',
+      name: 'Lumicea Gift Card',
+      price: 50,
+      image: 'https://images.pexels.com/photos/6693655/pexels-photo-6693655.jpeg?auto=compress&cs=tinysrgb&w=500',
+      rating: 5.0,
+      reviewCount: 42,
+      badge: 'Gift',
+    }
+  ];
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -56,7 +70,7 @@ export function NoseRingsPage() {
         <section className="py-16">
           <div className="lumicea-container">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {allProducts.map((product) => (
                 <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-all duration-300">
                   <div className="relative overflow-hidden rounded-t-lg">
                     <img

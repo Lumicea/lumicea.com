@@ -59,15 +59,16 @@ export function Header() {
       <header
         className={cn(
           'fixed top-0 z-50 w-full transition-all duration-500',
-          isScrolled ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50' : 'bg-transparent',
-          isScrolled ? 'mt-0' : 'mt-12',
-          'w-full'
+          isScrolled 
+            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50 mt-0' 
+            : 'bg-transparent mt-12',
+          'w-full max-w-[100vw] overflow-x-hidden'
         )}
       >
-        <div className="lumicea-container">
-          <div className="flex items-center justify-between h-20">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3 group z-10">
+            <Link to="/" className="flex items-center space-x-2 md:space-x-3 group z-10">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-lumicea-gold to-lumicea-gold-light rounded-xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                 <div className="relative bg-gradient-to-br from-lumicea-navy to-lumicea-navy-light p-3 rounded-xl group-hover:scale-110 transition-transform duration-300">
@@ -76,7 +77,7 @@ export function Header() {
               </div>
               <div className="flex flex-col">
                 <span className={cn(
-                  "text-3xl font-bold transition-colors duration-300",
+                  "text-2xl md:text-3xl font-bold transition-colors duration-300",
                   isScrolled ? "lumicea-text-gradient" : "text-white drop-shadow-lg"
                 )}>
                   Lumicea
@@ -94,10 +95,12 @@ export function Header() {
             <div className="hidden lg:flex items-center space-x-8">
               <nav className="flex items-center space-x-6">
                 <div className="relative group">
-                  <button className={cn(
+                  <button 
+                    className={cn(
                     "text-base font-medium transition-colors duration-300 hover:text-lumicea-navy bg-transparent",
                     isScrolled ? "text-gray-700" : "text-white hover:text-lumicea-gold drop-shadow-sm"
-                  )}>
+                    )}
+                  >
                     Shop
                   </button>
                   <div className="absolute left-0 top-full mt-2 w-[500px] p-6 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
@@ -182,7 +185,7 @@ export function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               {/* Search */}
               <Link to="/search">
                 <Button

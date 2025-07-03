@@ -42,7 +42,7 @@ const footerLinks = {
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },
     { name: 'Terms of Service', href: '/terms' },
-    { name: 'Cookie Policy', href: '/cookies' },
+    { name: 'Cookie Policy', href: '/legal/cookies' },
     { name: 'Accessibility', href: '/accessibility' },
   ],
 };
@@ -255,8 +255,8 @@ export function Footer() {
               <ul className="space-y-3">
                 {footerLinks.legal.map((link) => (
                   <li key={link.name}>
-                    <Link
-                      to={link.href}
+                    <Link 
+                      to={link.href.startsWith('/') ? link.href : `/legal/${link.href}`}
                       className="text-gray-300 hover:text-lumicea-gold transition-colors text-sm block py-1"
                     >
                       {link.name}

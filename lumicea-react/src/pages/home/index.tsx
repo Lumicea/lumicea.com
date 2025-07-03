@@ -542,6 +542,48 @@ export function HomePage() {
             </Button>
           </div>
         </div>
+      {/* Gift Card Section */}
+      <section className="py-24 bg-gray-50 relative">
+        <div className="container mx-auto px-4 relative">
+          <div className="bg-lumicea-gradient rounded-3xl overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
+              <div className="p-12 lg:p-16">
+                <Badge className="bg-lumicea-gold/20 text-lumicea-gold mb-4">
+                  Perfect Gift
+                </Badge>
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                  Gift Cards Now <span className="text-lumicea-gold">Available</span>
+                </h2>
+                <p className="text-lg text-gray-200 mb-8 leading-relaxed">
+                  Give the gift of choice with our digital gift cards. Perfect for birthdays, 
+                  anniversaries, or any special occasion. Available in various denominations.
+                </p>
+                <Button 
+                  size="lg" 
+                  className="bg-white text-lumicea-navy hover:bg-gray-100"
+                  asChild
+                >
+                  <Link to="/gift-cards">
+                    <Gift className="h-5 w-5 mr-2" />
+                    Shop Gift Cards
+                  </Link>
+                </Button>
+              </div>
+              <div className="relative lg:h-full">
+                <img 
+                  src="https://images.pexels.com/photos/6693655/pexels-photo-6693655.jpeg?auto=compress&cs=tinysrgb&w=1260" 
+                  alt="Gift Card" 
+                  className="w-full lg:h-full object-cover object-center"
+                />
+                <div className="absolute top-4 right-4 bg-white/90 rounded-lg p-3 shadow-lg">
+                  <div className="text-lumicea-navy font-bold text-2xl">£25 - £200</div>
+                  <div className="text-gray-600 text-sm">Multiple amounts available</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
       </section>
       </main>
       
