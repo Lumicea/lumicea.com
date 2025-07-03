@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import { HomePage } from "./pages/home/home.tsx";
-import { NotFoundPage } from "./pages/not-found/NotFound.tsx";
-import { CartPage } from "./pages/cart/Cart.tsx";
-import { CheckoutPage } from "./pages/checkout/Checkout.tsx";
-import { CheckoutSuccessPage } from "./pages/checkout/success/Success.tsx";
+import { HomePage } from "./pages/home/index.tsx";
+import { NotFoundPage } from "./pages/not-found/index.tsx";
+import { CartPage } from "./pages/cart/index.tsx";
+import { CheckoutPage } from "./pages/checkout/index.tsx";
+import { CheckoutSuccessPage } from "./pages/checkout/success/index.tsx";
 import { AboutPage } from "./pages/about.tsx";
 import { BlogPage } from "./pages/blog.tsx";
 import { ContactPage } from "./pages/contact.tsx";
@@ -14,19 +14,19 @@ import { GiftCardsPage } from "./pages/gift-cards.tsx";
 import { CollectionsPage } from "./pages/collections.tsx";
 import { SettingsPage } from "./pages/settings.tsx";
 import { SizeGuidePage } from "./pages/size-guide.tsx";
-import { LoginPage } from "./pages/auth/Login.tsx";
-import { SignupPage } from "./pages/auth/Signup.tsx";
-import { EarringsPage } from "./pages/categories/Earrings.tsx";
-import { NoseRingsPage } from "./pages/categories/NoseRings.tsx";
-import { ProductDetailPage } from "./pages/products/Detail.tsx";
+import { LoginPage } from "./pages/auth/login.tsx";
+import { SignupPage } from "./pages/auth/signup.tsx";
+import { EarringsPage } from "./pages/categories/earrings.tsx";
+import { NoseRingsPage } from "./pages/categories/nose-rings.tsx";
+import { ProductDetailPage } from "./pages/products/detail.tsx";
 
 // Admin Pages
-import { AdminDashboard } from "./pages/admin/dashboard/Dashboard.tsx";
-import { AdminProductsPage } from "./pages/admin/products/Products.tsx";
-import { AdminOrdersPage } from "./pages/admin/orders/Orders.tsx";
-import { AdminCustomersPage } from "./pages/admin/customers/Customers.tsx";
-import { AdminPagesPage } from "./pages/admin/pages/Pages.tsx";
-import { AdminBlogPage } from "./pages/admin/blog/Blog.tsx";
+import { AdminDashboard } from "./pages/admin/dashboard/index.tsx";
+import { AdminProductsPage } from "./pages/admin/products/index.tsx";
+import { AdminOrdersPage } from "./pages/admin/orders/index.tsx";
+import { AdminCustomersPage } from "./pages/admin/customers/index.tsx";
+import { AdminPagesPage } from "./pages/admin/pages/index.tsx";
+import { AdminBlogPage } from "./pages/admin/blog/index.tsx";
 
 function App() {
   return (
