@@ -47,7 +47,7 @@ interface RecentOrder {
   shipping_address?: {
     first_name: string;
     last_name: string;
-  };
+  }[]; // <--- MODIFIED THIS LINE
 }
 
 interface LowStockProduct {
@@ -282,9 +282,9 @@ export function AdminDashboard() {
                     <div>
                       <p className="font-medium">{order.order_number}</p>
                       <p className="text-sm text-gray-600">{order.customer_email}</p>
-                      {order.shipping_address && (
+                      {order.shipping_address && order.shipping_address.length > 0 && ( // Added length check
                         <p className="text-xs text-gray-500">
-                          {order.shipping_address.first_name} {order.shipping_address.last_name}
+                          {order.shipping_address[0].first_name} {order.shipping_address[0].last_name}
                         </p>
                       )}
                     </div>
@@ -362,3 +362,5 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+export default AdminDashboard;
