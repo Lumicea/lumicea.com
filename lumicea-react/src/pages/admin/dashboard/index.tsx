@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
-import {
-  TableBody,
-  TableCell,
-} from '../../../components/ui/table';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -50,7 +46,7 @@ interface RecentOrder {
   shipping_address?: {
     first_name: string;
     last_name: string;
-  };
+  }; // Changed from array to single object
 }
 
 interface LowStockProduct {

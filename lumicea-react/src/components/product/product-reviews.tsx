@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Star, ThumbsUp, Flag, Filter } from 'lucide-react';
 import {
   Select,
@@ -32,6 +34,7 @@ interface Review {
 }
 
 interface ProductReviewsProps {
+  productId: string;
   productId: string;
 }
 

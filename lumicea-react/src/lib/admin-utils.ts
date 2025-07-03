@@ -259,8 +259,7 @@ export async function fetchInventory() {
     
     const inventoryData = data?.map(item => ({
       variant_id: item.id,
-      // MODIFIED THIS LINE to access the first element of the product array
-      product_name: item.product?.name || 'Unknown Product',
+      product_name: item.product?.name || 'Unknown Product', // Corrected field access
       variant_name: item.name,
       sku: item.sku,
       current_stock: item.stock_quantity,
