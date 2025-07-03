@@ -4,7 +4,7 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  root: './',
+  // Removed: root: './', // Vite will now correctly infer the root from the CWD
   plugins: [react()],
   resolve: {
     alias: {
