@@ -1,0 +1,16 @@
+{
+  "name": "lumicea-react",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "lint": "npm run lint",
+    "preview": "npm run preview",
+    "type-check": "npm run type-check"
+  },
+  "dependencies": {
+    "lumicea-react": "file:./lumicea-react"
+  }
+}
