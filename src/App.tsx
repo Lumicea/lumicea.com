@@ -26,7 +26,7 @@ import { AdminProductsPage } from "@/pages/admin/products/index.tsx";
 import { AdminOrdersPage } from "@/pages/admin/orders/index.tsx";
 import { AdminCustomersPage } from "@/pages/admin/customers/index.tsx";
 import { AdminPagesPage } from "@/pages/admin/pages/index.tsx";
-import { AdminBlogPage } from "@t/pages/admin/blog/index.tsx";
+import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 
 function App() {
   return (
