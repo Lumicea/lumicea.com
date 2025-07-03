@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import { HomePage } from "./lumicea-react/pages/home/Home.tsx";
-import { NotFoundPage } from "./lumicea-react/pages/not-found/NotFound.tsx";
-import { CartPage } from "./lumicea-react/pages/cart/Cart.tsx";
-import { CheckoutPage } from "./lumicea-react/pages/checkout/Checkout.tsx";
-import { CheckoutSuccessPage } from "./lumicea-react/pages/checkout/success/Success.tsx";
+import { HomePage } from "./lumicea-react/pages/home/index.tsx";
+import { NotFoundPage } from "./lumicea-react/pages/not-found/index.tsx";
+import { CartPage } from "./lumicea-react/pages/cart/index.tsx";
+import { CheckoutPage } from "./lumicea-react/pages/checkout/index.tsx";
+import { CheckoutSuccessPage } from "./lumicea-react/pages/checkout/success/index.tsx";
 import { AboutPage } from "./lumicea-react/pages/about.tsx";
 import { BlogPage } from "./lumicea-react/pages/blog.tsx";
 import { ContactPage } from "./lumicea-react/pages/contact.tsx";
@@ -16,8 +16,8 @@ import { SettingsPage } from "./lumicea-react/pages/settings.tsx";
 import { SizeGuidePage } from "./lumicea-react/pages/size-guide.tsx";
 import { LoginPage } from "./lumicea-react/pages/auth/Login.tsx";
 import { SignupPage } from "./lumicea-react/pages/auth/Signup.tsx";
-import { EarringsPage } from "./lumicea-react/pages/categories/Earrings.tsx";
-import { NoseRingsPage } from "./lumicea-react/pages/categories/NoseRings.tsx";
+import { EarringsPage } from "./lumicea-react/pages/categories/aarrings.tsx";
+import { NoseRingsPage } from "./lumicea-react/pages/categories/nose-rings.tsx";
 import { ProductDetailPage } from "./lumicea-react/pages/products/Detail.tsx";
 
 // Admin Pages
