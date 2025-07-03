@@ -51,7 +51,7 @@ interface RecentOrder {
 
 interface LowStockProduct {
   id: string;
-  product_name: string;
+  product_name?: string;
   variant_name: string;
   sku: string;
   stock_quantity: number;

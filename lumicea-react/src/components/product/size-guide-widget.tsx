@@ -9,12 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Ruler, Info, ExternalLink, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';

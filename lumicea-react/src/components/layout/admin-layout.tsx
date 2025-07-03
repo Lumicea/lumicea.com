@@ -9,7 +9,7 @@ import {
   ShoppingCart,
   Users,
   BarChart3,
-  Settings,
+  Settings, Mail,
   Menu,
   Bell,
   User,
@@ -96,7 +96,7 @@ export function AdminLayout() {
 useEffect(() => {
   checkUser();
   fetchNotifications();
-}, [checkUser, fetchNotifications]); // Added checkUser and fetchNotifications to the dependency array
+}, []); // Remove functions from dependency array to avoid circular reference
 
   const checkUser = async () => {
     try {
