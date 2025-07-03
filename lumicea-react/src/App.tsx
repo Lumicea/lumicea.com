@@ -1,33 +1,32 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import { HomePage } from "./pages/home/index.tsx"; // Confirmed path 
-import { NotFoundPage } from "./pages/not-found/index.tsx"; // Confirmed path 
-import { CartPage } from "./pages/cart/index.tsx"; // Confirmed path 
-import { CheckoutPage } from "./pages/checkout/index.tsx"; // Confirmed path 
-import { CheckoutSuccessPage } from "./pages/checkout/success/index.tsx"; // Confirmed path 
-import { AboutPage } from "./pages/about.tsx"; // Confirmed path 
-import { BlogPage } from "./pages/blog.tsx"; // Confirmed path 
-import { ContactPage } from "./pages/contact.tsx"; // Confirmed path 
-import { CustomPage } from "./pages/custom.tsx"; // Confirmed path 
-import { GiftCardsPage } from "./pages/gift-cards.tsx"; // Confirmed path 
-import { CollectionsPage } from "./pages/collections.tsx"; // Confirmed path 
-import { SettingsPage } from "./pages/settings.tsx"; // Confirmed path 
-import { SizeGuidePage } from "./pages/size-guide.tsx"; // Confirmed path 
-import { LoginPage } from "./pages/auth/login.tsx"; // Confirmed path 
-import { SignupPage } from "./pages/auth/signup.tsx"; // Confirmed path 
-import { EarringsPage } from "./pages/categories/earrings.tsx"; // Confirmed path 
-import { NoseRingsPage } from "./pages/categories/nose-rings.tsx"; // Confirmed path 
-import { ProductDetailPage } from "./pages/products/detail.tsx"; // Confirmed path 
+import { HomePage } from "./pages/home/index.tsx";
+import { NotFoundPage } from "./pages/not-found/index.tsx";
+import { CartPage } from "./pages/cart/index.tsx";
+import { CheckoutPage } from "./pages/checkout/index.tsx";
+import { CheckoutSuccessPage } from "./pages/checkout/success/index.tsx";
+import { AboutPage } from "./pages/about.tsx";
+import { BlogPage } from "./pages/blog.tsx";
+import { ContactPage } from "./pages/contact.tsx";
+import { CustomPage } from "./pages/custom.tsx";
+import { GiftCardsPage } from "./pages/gift-cards.tsx";
+import { CollectionsPage } from "./pages/collections.tsx";
+import { SettingsPage } from "./pages/settings.tsx";
+import { SizeGuidePage } from "./pages/size-guide.tsx";
+import { LoginPage } from "./pages/auth/login.tsx";
+import { SignupPage } from "./pages/auth/signup.tsx";
+import { EarringsPage } from "./pages/categories/earrings.tsx";
+import { NoseRingsPage } from "./pages/categories/nose-rings.tsx";
+import { ProductDetailPage } from "./pages/products/detail.tsx";
 
 // Admin Pages
-import { AdminDashboard } from "./pages/admin/dashboard/index.tsx"; // Confirmed path 
-import { AdminProductsPage } from "./pages/admin/products/index.tsx"; // Confirmed path 
-import { AdminOrdersPage } from "./pages/admin/orders/index.tsx"; // Confirmed path 
-import { AdminCustomersPage } from "./pages/admin/customers/index.tsx"; // Confirmed path 
-import { AdminPagesPage } from "./pages/admin/pages/index.tsx"; // Confirmed path 
-import { AdminBlogPage } from "./pages/admin/blog/index.tsx"; // Confirmed path 
-
+import { AdminDashboard } from "./pages/admin/dashboard/index.tsx";
+import { AdminProductsPage } from "./pages/admin/products/index.tsx";
+import { AdminOrdersPage } from "./pages/admin/orders/index.tsx";
+import { AdminCustomersPage } from "./pages/admin/customers/index.tsx";
+import { AdminPagesPage } from "./pages/admin/pages/index.tsx";
+import { AdminBlogPage } from "./pages/admin/blog/index.tsx";
 
 function App() {
   return (
