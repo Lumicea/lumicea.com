@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -146,6 +148,9 @@ const stats = [
 export function HomePage() {
   return (
     <div className="min-h-screen overflow-hidden">
+      <Header />
+      
+      <main>
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background with improved overlay */}
@@ -512,6 +517,9 @@ export function HomePage() {
           </div>
         </div>
       </section>
+      </main>
+      
+      <Footer />
     </div>
   );
 }
