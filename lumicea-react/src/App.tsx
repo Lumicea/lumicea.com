@@ -16,7 +16,7 @@ import { SettingsPage } from "./lumicea-react/pages/settings.tsx";
 import { SizeGuidePage } from "./lumicea-react/pages/size-guide.tsx";
 import { LoginPage } from "./lumicea-react/pages/auth/Login.tsx";
 import { SignupPage } from "./lumicea-react/pages/auth/Signup.tsx";
-import { EarringsPage } from "./lumicea-react/pages/categories/aarrings.tsx";
+import { EarringsPage } from "./lumicea-react/pages/categories/earrings.tsx";
 import { NoseRingsPage } from "./lumicea-react/pages/categories/nose-rings.tsx";
 import { ProductDetailPage } from "./lumicea-react/pages/products/Detail.tsx";
 
