@@ -59,11 +59,9 @@ export function Header() {
       <header
         className={cn(
           'fixed top-0 z-50 w-full transition-all duration-500',
-          isScrolled
-            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50'
-            : 'bg-transparent',
-          // Ensure proper spacing from top when banner is hidden
-          isScrolled ? 'mt-0' : 'mt-12'
+          isScrolled ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50' : 'bg-transparent',
+          isScrolled ? 'mt-0' : 'mt-12',
+          'w-full'
         )}
       >
         <div className="lumicea-container">
@@ -186,19 +184,21 @@ export function Header() {
             {/* Right Actions */}
             <div className="flex items-center space-x-2">
               {/* Search */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "transition-colors duration-300 rounded-xl",
-                  isScrolled 
-                    ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
-                    : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
-                )}
-              >
+              <Link to="/search">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "transition-colors duration-300 rounded-xl",
+                    isScrolled 
+                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                      : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                  )}
+                >
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
-              </Button>
+            </Button>
+          </Link>
 
               {/* Account Dropdown or Login Button */}
               {!loading && (
@@ -296,19 +296,21 @@ export function Header() {
               )}
 
               {/* Wishlist */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "transition-colors duration-300 rounded-xl",
-                  isScrolled 
-                    ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
-                    : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
-                )}
-              >
-                <Heart className="h-5 w-5" />
-                <span className="sr-only">Wishlist</span>
-              </Button>
+              <Link to="/wishlist">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "transition-colors duration-300 rounded-xl",
+                    isScrolled 
+                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                      : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                  )}
+                >
+                  <Heart className="h-5 w-5" />
+                  <span className="sr-only">Wishlist</span>
+                </Button>
+              </Link>
 
               {/* Cart */}
               <Link to="/cart">
@@ -325,7 +327,7 @@ export function Header() {
                   <ShoppingBag className="h-5 w-5" />
                   {itemCount > 0 && (
                     <Badge
-                      variant="destructive"
+                      variant="default"
                       className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs bg-lumicea-gold text-lumicea-navy hover:bg-lumicea-gold-light animate-pulse"
                     >
                       {itemCount}

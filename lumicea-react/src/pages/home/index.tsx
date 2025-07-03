@@ -394,10 +394,36 @@ export function HomePage() {
                     <PriceDisplay 
                       price={product.price} 
                       originalPrice={product.originalPrice || undefined}
-                      size="lg"
+                      size="md"
                       className="font-bold"
                     />
-                    <Button size="sm" className="lumicea-button-primary px-6">
+                    <Button 
+                      size="sm" 
+                      className="lumicea-button-primary px-6"
+                      onClick={() => {
+                        // Add to cart functionality
+                        const cartItem = {
+                          id: `${product.id}-${Date.now()}`,
+                          productId: product.id.toString(),
+                          variantId: `default-${product.id}`,
+                          name: product.name,
+                          price: product.price,
+                          quantity: 1,
+                          image: product.image,
+                          attributes: {
+                            material: '940 Argentium Silver',
+                            size: '7mm',
+                          }
+                        };
+                        
+                        // Use local storage to simulate cart
+                        const cart = JSON.parse(localStorage.getItem('lumicea-cart') || '[]');
+                        cart.push(cartItem);
+                        localStorage.setItem('lumicea-cart', JSON.stringify(cart));
+                        
+                        alert('Added to cart!');
+                      }}
+                    >
                       Add to Cart
                     </Button>
                   </div>

@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 export interface CartItem {
   id: string;
   productId: string;
-  variantId: string;
+  variantId?: string;
   name: string;
   price: number;
   quantity: number;
@@ -54,7 +54,7 @@ export const useCart = create<CartStore>()(
         if (existingItemIndex >= 0) {
           // Update quantity if item already exists
           newItems = [...items];
-          newItems[existingItemIndex].quantity += item.quantity;
+          newItems[existingItemIndex].quantity += item.quantity || 1;
         } else {
           // Add new item
           newItems = [...items, { ...item, id: `${item.variantId}-${Date.now()}` }];

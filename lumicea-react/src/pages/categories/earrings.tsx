@@ -116,14 +116,44 @@ export function EarringsPage() {
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-900">£{product.price}</span>
+                        <span className="font-semibold text-gray-900">
+                          <Link to={`/products/${product.id}`}>
+                            £{product.price}
+                          </Link>
+                        </span>
                         {product.originalPrice && (
                           <span className="text-sm text-gray-500 line-through">
                             £{product.originalPrice}
                           </span>
                         )}
                       </div>
-                      <Button size="sm" className="lumicea-button-primary">
+                      <Button 
+                        size="sm" 
+                        className="lumicea-button-primary" 
+                        onClick={() => {
+                          // Add to cart functionality
+                          const cartItem = {
+                            id: `${product.id}-${Date.now()}`,
+                            productId: product.id.toString(),
+                            variantId: `default-${product.id}`,
+                            name: product.name,
+                            price: product.price,
+                            quantity: 1,
+                            image: product.image,
+                            attributes: {
+                              material: '940 Argentium Silver',
+                              size: 'Standard',
+                            }
+                          };
+                          
+                          // Use local storage to simulate cart
+                          const cart = JSON.parse(localStorage.getItem('lumicea-cart') || '[]');
+                          cart.push(cartItem);
+                          localStorage.setItem('lumicea-cart', JSON.stringify(cart));
+                          
+                          alert('Added to cart!');
+                        }}
+                      >
                         Add to Cart
                       </Button>
                     </div>
