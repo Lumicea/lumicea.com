@@ -5,6 +5,7 @@ import { ProductInformation } from './product-information';
 import { ProductReviews } from './product-reviews';
 import { RelatedProducts } from './related-products';
 import { SizeGuideWidget } from './size-guide-widget';
+import { ProductVariant } from './product-customization';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
