@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Award, Users, Gem, Leaf, Shield } from 'lucide-react';
+import { Heart, Gem, Leaf, Shield } from 'lucide-react';
 
 const values = [
   {
@@ -14,17 +14,17 @@ const values = [
   {
     icon: Gem,
     title: 'Premium Materials',
-    description: 'We use only the finest metals and ethically sourced gemstones in all our creations.',
+    description: 'We use only the finest metals and ethically sourced gemstones and beads in all our creations.',
   },
   {
     icon: Leaf,
     title: 'Sustainable Practices',
-    description: 'Committed to environmentally responsible sourcing and sustainable jewelry making.',
+    description: 'Committed to environmentally responsible sourcing and sustainable jewellery making.',
   },
   {
     icon: Shield,
-    title: 'Quality Guarantee',
-    description: 'Each piece comes with our lifetime warranty, reflecting our confidence in our craftsmanship.',
+    title: 'Only the Best',
+    description: 'All manufacturing processes and materials are chosen with your safety and care in mind.',
   },
 ];
 
@@ -56,18 +56,18 @@ export function AboutPage() {
                 </h2>
                 <div className="space-y-4 text-gray-700 leading-relaxed">
                   <p>
-                    Lumicea was born from a passion for creating jewelry that tells a story. Founded in 2018, 
-                    we began with a simple belief: that every piece of jewelry should be as unique as the 
+                    Lumicea was born from a passion for creating jewelry that tells a story. Founded in 2017, 
+                    we began with a simple belief: that every piece of jewellery should be as unique as the 
                     person wearing it.
                   </p>
                   <p>
-                    What started as a small workshop has grown into a beloved brand known for exceptional 
-                    handcrafted beaded jewelry. Our artisans combine traditional techniques with contemporary 
-                    design, creating pieces that are both timeless and modern.
+                    What started at a humble desk in the middle of my lounge, Luicea has grown into a beloved brand known for exceptional 
+                    handcrafted beaded jewellery. Combining proven techniques with my own methods and 
+                    design, reinforcing my commitment to creating pieces that are both timeless and modern.
                   </p>
                   <p>
-                    Today, we're proud to serve customers across the UK and beyond, each piece carrying 
-                    our commitment to quality, sustainability, and the celebration of individual expression.
+                    Today, I'm proud to serve customers across the UK and beyond, each piece carrying 
+                    my commitment to quality, sustainability, and the celebration of individual expression.
                   </p>
                 </div>
               </div>
@@ -78,7 +78,7 @@ export function AboutPage() {
                   className="rounded-lg shadow-lg"
                 />
                 <Badge className="absolute top-4 left-4 bg-lumicea-gold text-lumicea-navy">
-                  Handcrafted Since 2018
+                  Handcrafted Since 2017
                 </Badge>
               </div>
             </div>
