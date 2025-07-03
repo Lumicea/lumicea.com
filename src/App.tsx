@@ -15,7 +15,7 @@ import { CollectionsPage } from "./pages/collections.tsx";
 import { SettingsPage } from "./pages/settings.tsx";
 import { SizeGuidePage } from "./pages/size-guide.tsx";
 import { LoginPage } from "./pages/auth/Login.tsx";
-import { SignupPage } from "./pages/auth/Signup.tsx";
+import { SignupPage } => "./pages/auth/Signup.tsx";
 import { EarringsPage } from "./pages/categories/Earrings.tsx";
 import { NoseRingsPage } from "./pages/categories/NoseRings.tsx";
 import { ProductDetailPage } from "./pages/products/Detail.tsx";
@@ -24,7 +24,7 @@ import { ProductDetailPage } from "./pages/products/Detail.tsx";
 import { AdminDashboard } from "./pages/admin/dashboard/Dashboard.tsx";
 import { AdminProductsPage } from "./pages/admin/products/Products.tsx";
 import { AdminOrdersPage } from "./pages/admin/orders/Orders.tsx";
-import { AdminCustomersPage } => "./pages/admin/customers/Customers.tsx";
+import { AdminCustomersPage } from "./pages/admin/customers/Customers.tsx";
 import { AdminPagesPage } from "./pages/admin/pages/Pages.tsx";
 import { AdminBlogPage } from "./pages/admin/blog/Blog.tsx";
 
