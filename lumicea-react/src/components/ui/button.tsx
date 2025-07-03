@@ -1,10 +1,8 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "@/lib/utils";
-// Import LinkProps from react-router-dom for conditional typing
-import { LinkProps } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -35,29 +33,20 @@ const buttonVariants = cva(
   }
 );
 
-// Define a base interface for common props regardless of `asChild`
-interface ButtonBaseProps extends VariantProps<typeof buttonVariants> {
-  // Any common props that apply whether it's a button or a slot
-  // For example, if you had an `isLoading` prop that applies to both
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  asLink?: boolean;
 }
 
-// Define the conditional type for ButtonProps
-type ButtonProps = ButtonBaseProps &
-  (
-    | (React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: false }) // When asChild is false or undefined, it's a button
-    | (LinkProps & { asChild: true }) // When asChild is true, it accepts LinkProps
-  );
-
-
-// Adjust the forwardRef to handle both HTMLButtonElement and HTMLAnchorElement refs
-const Button = React.forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
-        // Type assertion for ref to handle the union type correctly for the underlying element
-        ref={ref as React.Ref<any>} // Cast to React.Ref<any> or be more specific like React.Ref<HTMLButtonElement | HTMLAnchorElement>
+        ref={ref}
         {...props}
       />
     );
