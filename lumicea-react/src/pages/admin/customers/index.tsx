@@ -5,15 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
-  Filter, 
-  MoreHorizontal, 
+  Filter,  
   Eye, 
   Mail,
   Users,
   UserPlus,
   Star,
   Download,
-  MessageCircle
 } from 'lucide-react';
 import { fetchCustomers } from '@/lib/admin-utils';
 import { formatCurrency, formatDate } from '@/lib/utils';
