@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
-import { HomePage } from "./pages/home/Home.tsx";
+import { HomePage } from "./pages/home/home.tsx";
 import { NotFoundPage } from "./pages/not-found/NotFound.tsx";
 import { CartPage } from "./pages/cart/Cart.tsx";
 import { CheckoutPage } from "./pages/checkout/Checkout.tsx";
