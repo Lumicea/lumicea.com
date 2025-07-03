@@ -12,14 +12,9 @@ import {
   Truck,
   Star,
   Clock,
-  Award,
   Gem,
   Play,
   ChevronDown,
-  CheckCircle,
-  Users,
-  Zap,
-  Globe,
 } from 'lucide-react';
 
 // Product data
