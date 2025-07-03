@@ -22,13 +22,9 @@ import {
   Settings, 
   Bell, 
   Shield, 
-  CreditCard,
-  MapPin,
   Gem,
   Save,
   Sparkles,
-  Heart,
-  Package
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
