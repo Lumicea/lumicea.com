@@ -1,3 +1,4 @@
+// lumicea-react/src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Import the Header component
@@ -20,7 +21,7 @@ import { CollectionsPage } from "@/pages/collections.tsx";
 import { SettingsPage } from "@/pages/settings.tsx";
 import { SizeGuidePage } from "@/pages/size-guide.tsx";
 import { LoginPage } from "@/pages/auth/login.tsx";
-import { SignupPage } = "@/pages/auth/signup.tsx";
+import { SignupPage } from "@/pages/auth/signup.tsx"; // CORRECTED: Changed '=' to 'from'
 import { PrivacyPage } from "@/pages/legal/privacy.tsx";
 import { CookiesPage } from "@/pages/legal/cookies.tsx";
 import { TermsPage } from "@/pages/legal/terms.tsx";
@@ -42,7 +43,7 @@ import { CookieConsent } from './components/ui/cookie-consent.tsx';
 function App() {
   return (
     <Router>
-      <Header /> {/* ADDED: Render the Header component here */}
+      <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/cart" element={<CartPage />} />
