@@ -44,9 +44,9 @@ export function Header() {
       className={cn(
         'fixed top-0 z-50 w-full transition-all duration-500',
         isScrolled
-          ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50' // Removed mt-0, which was redundant, and mt-12 if it was here
-          : 'bg-transparent', // Removed mt-12 from here
-        'w-full max-w-[100vw] overflow-x-hidden'
+          ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50'
+          : 'bg-transparent',
+        'w-full max-w-[100vw]' // Removed overflow-x-hidden
       )}
     >
       {/* Top Banner - Only show when not scrolled */}
