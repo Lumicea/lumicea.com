@@ -1,3 +1,4 @@
+// lumicea-react/src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // Pages
@@ -32,6 +33,9 @@ import { AdminOrdersPage } from "@/pages/admin/orders/index.tsx";
 import { AdminCustomersPage } from "@/pages/admin/customers/index.tsx";
 import { AdminPagesPage } from "@/pages/admin/pages/index.tsx";
 import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
+
+// UI Components
+import { CookieConsent } from './components/ui/cookie-consent.tsx'; // Add this line
 
 function App() {
   return (
@@ -72,6 +76,7 @@ function App() {
         {/* 404 Route */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <CookieConsent /> {/* Add this line */}
     </Router>
   );
 }
