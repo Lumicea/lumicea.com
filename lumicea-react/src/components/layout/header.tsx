@@ -57,7 +57,7 @@ export function Header() {
         <div className="lumicea-container py-3">
           <p className="text-center text-sm font-medium flex items-center justify-center gap-2 animate-fade-in-down">
             <Star className="h-4 w-4 text-lumicea-gold animate-pulse" />
-            Free UK shipping on orders over £50 • Lifetime warranty on all pieces
+            Free UK shipping on orders over £25
             <Star className="h-4 w-4 text-lumicea-gold animate-pulse" />
           </p>
         </div>
