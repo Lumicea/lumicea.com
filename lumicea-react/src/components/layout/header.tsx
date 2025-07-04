@@ -1,6 +1,7 @@
+// src/components/layout/header.tsx (Reverted to use Button as={Link})
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'; // Make sure this import is correct
 import { Badge } from '@/components/ui/badge';
 import {
   Search,
@@ -267,30 +268,33 @@ export function Header() {
                   </div>
                 ) : (
                   <div className="hidden sm:flex items-center space-x-2">
-                    {/* Temporarily changed Button as={Link} to plain Link */}
-                    <Link
+                    <Button
+                      as={Link} // Reverted to Button as={Link}
                       to="/login"
+                      variant="ghost"
+                      size="sm"
                       className={cn(
-                        "transition-colors duration-300 px-3 py-2 rounded-md text-sm font-medium", // Added some basic button styling for visibility
+                        "transition-colors duration-300",
                         isScrolled
                           ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                           : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                       )}
                     >
                       Sign In
-                    </Link>
-                    {/* Temporarily changed Button as={Link} to plain Link */}
-                    <Link
+                    </Button>
+                    <Button
+                      as={Link} // Reverted to Button as={Link}
                       to="/signup"
+                      size="sm"
                       className={cn(
-                        "transition-colors duration-300 px-3 py-2 rounded-md text-sm font-medium", // Added some basic button styling for visibility
+                        "transition-colors duration-300",
                         isScrolled
                           ? "lumicea-button-primary"
                           : "bg-lumicea-gold text-lumicea-navy hover:bg-lumicea-gold-light shadow-lg"
                       )}
                     >
                       Sign Up
-                    </Link>
+                    </Button>
                   </div>
                 )
               )}
@@ -377,20 +381,12 @@ export function Header() {
                   </div>
                 ) : (
                   <div className="flex space-x-2">
-                    {/* Temporarily changed Button to plain Link */}
-                    <Link
-                      to="/login"
-                      className="flex-1 px-3 py-2 rounded-md text-sm font-medium lumicea-button-secondary" // Basic styling
-                    >
-                      Sign In
-                    </Link>
-                    {/* Temporarily changed Button to plain Link */}
-                    <Link
-                      to="/signup"
-                      className="flex-1 px-3 py-2 rounded-md text-sm font-medium lumicea-button-primary" // Basic styling
-                    >
-                      Sign Up
-                    </Link>
+                    <Button className="flex-1 lumicea-button-secondary">
+                      <Link to="/login">Sign In</Link> {/* Reverted */}
+                    </Button>
+                    <Button className="flex-1 lumicea-button-primary">
+                      <Link to="/signup">Sign Up</Link> {/* Reverted */}
+                    </Button>
                   </div>
                 )}
               </div>
