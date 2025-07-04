@@ -17,6 +17,7 @@ import {
   Gem,
   Play,
   ChevronDown,
+  Gift,
 } from 'lucide-react';
 
 // Product data
