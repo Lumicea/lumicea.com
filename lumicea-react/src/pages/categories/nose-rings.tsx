@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Heart } from 'lucide-react';
+import { Star, Heart, Gift } from 'lucide-react';
 
 const products = [
   {
