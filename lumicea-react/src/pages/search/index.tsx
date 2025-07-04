@@ -11,7 +11,8 @@ import {
   Heart,
   X,
   Filter,
-  ShoppingCart
+  ShoppingCart,
+  Gift
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
