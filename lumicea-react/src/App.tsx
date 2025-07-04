@@ -1,5 +1,7 @@
-// lumicea-react/src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// Import the Header component
+import { Header } from './components/layout/header'; // Ensure this path is correct
 
 // Pages
 import { HomePage } from "@/pages/home/index.tsx";
@@ -18,7 +20,7 @@ import { CollectionsPage } from "@/pages/collections.tsx";
 import { SettingsPage } from "@/pages/settings.tsx";
 import { SizeGuidePage } from "@/pages/size-guide.tsx";
 import { LoginPage } from "@/pages/auth/login.tsx";
-import { SignupPage } from "@/pages/auth/signup.tsx";
+import { SignupPage } = "@/pages/auth/signup.tsx";
 import { PrivacyPage } from "@/pages/legal/privacy.tsx";
 import { CookiesPage } from "@/pages/legal/cookies.tsx";
 import { TermsPage } from "@/pages/legal/terms.tsx";
@@ -35,11 +37,12 @@ import { AdminPagesPage } from "@/pages/admin/pages/index.tsx";
 import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 
 // UI Components
-import { CookieConsent } from './components/ui/cookie-consent.tsx'; // Add this line
+import { CookieConsent } from './components/ui/cookie-consent.tsx';
 
 function App() {
   return (
     <Router>
+      <Header /> {/* ADDED: Render the Header component here */}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/cart" element={<CartPage />} />
@@ -76,7 +79,7 @@ function App() {
         {/* 404 Route */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <CookieConsent /> {/* Add this line */}
+      <CookieConsent />
     </Router>
   );
 }
