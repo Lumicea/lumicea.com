@@ -59,8 +59,8 @@ export function Header() {
       <header
         className={cn(
           'fixed top-0 z-50 w-full transition-all duration-500',
-          isScrolled 
-            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50 mt-0' 
+          isScrolled
+            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50 mt-0'
             : 'bg-transparent mt-12',
           'w-full max-w-[100vw] overflow-x-hidden'
         )}
@@ -95,7 +95,7 @@ export function Header() {
             <div className="hidden lg:flex items-center space-x-8">
               <nav className="flex items-center space-x-6">
                 <div className="relative group">
-                  <button 
+                  <button
                     className={cn(
                     "text-base font-medium transition-colors duration-300 hover:text-lumicea-navy bg-transparent",
                     isScrolled ? "text-gray-700" : "text-white hover:text-lumicea-gold drop-shadow-sm"
@@ -157,8 +157,8 @@ export function Header() {
                 
                 <Link to="/about" className={cn(
                   "text-base font-medium transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-white/10",
-                  isScrolled 
-                    ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5" 
+                  isScrolled
+                    ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5"
                     : "text-white hover:text-lumicea-gold drop-shadow-sm"
                 )}>
                   About
@@ -166,8 +166,8 @@ export function Header() {
                 
                 <Link to="/blog" className={cn(
                   "text-base font-medium transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-white/10",
-                  isScrolled 
-                    ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5" 
+                  isScrolled
+                    ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5"
                     : "text-white hover:text-lumicea-gold drop-shadow-sm"
                 )}>
                   Blog
@@ -175,8 +175,8 @@ export function Header() {
                 
                 <Link to="/contact" className={cn(
                   "text-base font-medium transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-white/10",
-                  isScrolled 
-                    ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5" 
+                  isScrolled
+                    ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5"
                     : "text-white hover:text-lumicea-gold drop-shadow-sm"
                 )}>
                   Contact
@@ -193,8 +193,8 @@ export function Header() {
                   size="icon"
                   className={cn(
                     "transition-colors duration-300 rounded-xl",
-                    isScrolled 
-                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                    isScrolled
+                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                       : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                   )}
                 >
@@ -212,8 +212,8 @@ export function Header() {
                       size="icon"
                       className={cn(
                         "transition-colors duration-300 rounded-xl",
-                        isScrolled 
-                          ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                        isScrolled
+                          ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                           : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                       )}
                     >
@@ -255,8 +255,8 @@ export function Header() {
                         )}
                       </div>
                       <div className="p-2 border-t">
-                        <button 
-                          onClick={handleSignOut} 
+                        <button
+                          onClick={handleSignOut}
                           className="flex items-center w-full p-2 rounded-md hover:bg-gray-100 text-red-600"
                         >
                           <LogOut className="mr-2 h-4 w-4" />
@@ -267,33 +267,30 @@ export function Header() {
                   </div>
                 ) : (
                   <div className="hidden sm:flex items-center space-x-2">
-                    <Button
-                      as={Link}
+                    {/* Temporarily changed Button as={Link} to plain Link */}
+                    <Link
                       to="/login"
-                      variant="ghost"
-                      size="sm"
                       className={cn(
-                        "transition-colors duration-300",
-                        isScrolled 
-                          ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                        "transition-colors duration-300 px-3 py-2 rounded-md text-sm font-medium", // Added some basic button styling for visibility
+                        isScrolled
+                          ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                           : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                       )}
                     >
                       Sign In
-                    </Button>
-                    <Button
-                      as={Link}
+                    </Link>
+                    {/* Temporarily changed Button as={Link} to plain Link */}
+                    <Link
                       to="/signup"
-                      size="sm"
                       className={cn(
-                        "transition-colors duration-300",
-                        isScrolled 
-                          ? "lumicea-button-primary" 
+                        "transition-colors duration-300 px-3 py-2 rounded-md text-sm font-medium", // Added some basic button styling for visibility
+                        isScrolled
+                          ? "lumicea-button-primary"
                           : "bg-lumicea-gold text-lumicea-navy hover:bg-lumicea-gold-light shadow-lg"
                       )}
                     >
                       Sign Up
-                    </Button>
+                    </Link>
                   </div>
                 )
               )}
@@ -305,8 +302,8 @@ export function Header() {
                   size="icon"
                   className={cn(
                     "transition-colors duration-300 rounded-xl",
-                    isScrolled 
-                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                    isScrolled
+                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                       : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                   )}
                 >
@@ -322,8 +319,8 @@ export function Header() {
                   size="icon"
                   className={cn(
                     "relative transition-colors duration-300 rounded-xl",
-                    isScrolled 
-                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                    isScrolled
+                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                       : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                   )}
                 >
@@ -346,8 +343,8 @@ export function Header() {
                 size="icon"
                 className={cn(
                   "lg:hidden transition-colors duration-300 rounded-xl",
-                  isScrolled 
-                    ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
+                  isScrolled
+                    ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
                     : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
                 )}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -380,12 +377,20 @@ export function Header() {
                   </div>
                 ) : (
                   <div className="flex space-x-2">
-                    <Button className="flex-1 lumicea-button-secondary">
-                      <Link to="/login">Sign In</Link>
-                    </Button>
-                    <Button className="flex-1 lumicea-button-primary">
-                      <Link to="/signup">Sign Up</Link>
-                    </Button>
+                    {/* Temporarily changed Button to plain Link */}
+                    <Link
+                      to="/login"
+                      className="flex-1 px-3 py-2 rounded-md text-sm font-medium lumicea-button-secondary" // Basic styling
+                    >
+                      Sign In
+                    </Link>
+                    {/* Temporarily changed Button to plain Link */}
+                    <Link
+                      to="/signup"
+                      className="flex-1 px-3 py-2 rounded-md text-sm font-medium lumicea-button-primary" // Basic styling
+                    >
+                      Sign Up
+                    </Link>
                   </div>
                 )}
               </div>
