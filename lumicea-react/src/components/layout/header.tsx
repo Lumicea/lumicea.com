@@ -447,9 +447,6 @@ export function Header() {
             <Link to="/contact" className="block p-3 rounded-xl hover:bg-lumicea-navy/5 transition-colors font-medium text-gray-700 hover:text-lumicea-navy">
               Contact
             </Link>
-            <Link to="/size-guide" className="block p-3 rounded-xl hover:bg-lumicea-navy/5 transition-colors font-medium text-gray-700 hover:text-lumicea-navy">
-              Size Guide
-            </Link>
             
           </div>
         </div>
