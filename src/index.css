@@ -1,0 +1,36 @@
+@@ .. @@
+   }
+ }
+ 
++/* Sheet component mobile adjustments */
++.fixed.z-50.w-3\/4.h-full {
++  max-width: 100vw;
++  overflow-y: auto; 
++}
++
++/* Fix for horizontal scrolling on mobile */
++body {
++  overflow-x: hidden;
++  width: 100%;
++}
++
++/* Mobile responsiveness fixes */
++@media (max-width: 640px) {
++  .container {
++    padding-left: 1rem;
++    padding-right: 1rem;
++  }
++  
++  /* Smaller text for mobile */
++  h1.text-5xl {
++    font-size: 2.5rem;
++  }
++  
++  h1.text-4xl {
++    font-size: 2rem;
++  }
++}
++
+ @layer base {
+   * {
+     @apply border-border;
