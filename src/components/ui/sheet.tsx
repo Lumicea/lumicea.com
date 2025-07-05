@@ -27,3 +27,5 @@ t', ...props }, ref) => {
 -));
 +  );
 +});
+
+export { SheetContent }
