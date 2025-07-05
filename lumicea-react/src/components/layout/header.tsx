@@ -175,6 +175,24 @@ export function Header() {
                 Blog
               </Link>
               
+              <Link to="/size-guide" className={cn(
+                "text-base font-medium transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-white/10",
+                isScrolled
+                  ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5"
+                  : "text-white hover:text-lumicea-gold drop-shadow-sm"
+              )}>
+                Size Guide
+              </Link>
+              
+              <Link to="/care" className={cn(
+                "text-base font-medium transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-white/10",
+                isScrolled
+                  ? "text-gray-700 hover:text-lumicea-navy hover:bg-lumicea-navy/5"
+                  : "text-white hover:text-lumicea-gold drop-shadow-sm"
+              )}>
+                Care Instructions
+              </Link>
+              
               <Link to="/contact" className={cn(
                 "text-base font-medium transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-white/10",
                 isScrolled
@@ -382,11 +400,11 @@ export function Header() {
                 </div>
               ) : (
                 <div className="flex space-x-2">
-                  <Button className="flex-1 lumicea-button-secondary">
-                    <Link to="/login">Sign In</Link>
+                  <Button as={Link} to="/login" className="flex-1 lumicea-button-secondary">
+                    Sign In
                   </Button>
-                  <Button className="flex-1 lumicea-button-primary">
-                    <Link to="/signup">Sign Up</Link>
+                  <Button as={Link} to="/signup" className="flex-1 lumicea-button-primary">
+                    Sign Up
                   </Button>
                 </div>
               )}
@@ -447,7 +465,12 @@ export function Header() {
             <Link to="/contact" className="block p-3 rounded-xl hover:bg-lumicea-navy/5 transition-colors font-medium text-gray-700 hover:text-lumicea-navy">
               Contact
             </Link>
-            
+            <Link to="/size-guide" className="block p-3 rounded-xl hover:bg-lumicea-navy/5 transition-colors font-medium text-gray-700 hover:text-lumicea-navy">
+              Size Guide
+            </Link>
+            <Link to="/care" className="block p-3 rounded-xl hover:bg-lumicea-navy/5 transition-colors font-medium text-gray-700 hover:text-lumicea-navy">
+              Care Instructions
+            </Link>
           </div>
         </div>
       </div>

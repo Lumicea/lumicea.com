@@ -17,6 +17,7 @@ import { AboutPage } from "@/pages/about.tsx";
 import { BlogPage } from "@/pages/blog.tsx";
 import { ContactPage } from "@/pages/contact.tsx";
 import { CustomPage } from "@/pages/custom.tsx";
+import { CarePage } from "@/pages/care.tsx";
 import { CollectionsPage } from "@/pages/collections.tsx";
 import { SettingsPage } from "@/pages/settings.tsx";
 import { SizeGuidePage } from "@/pages/size-guide.tsx";
@@ -56,6 +57,7 @@ function App() {
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/custom" element={<CustomPage />} />
+        <Route path="/care" element={<CarePage />} />
         <Route path="/gift-cards" element={<GiftCardsPage />} />
         <Route path="/collections" element={<CollectionsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
