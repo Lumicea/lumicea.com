@@ -183,7 +183,7 @@ export function TermsPage() {
             
             <Card className="mb-8">
               <CardHeader>
-                <CardTitle>Limitation Of Liability</CardTitle>
+                <CardTitle>Limitation Of Liability</Card_Title>
               </CardHeader>
               <CardContent className="prose max-w-none">
                 <p>
@@ -232,5 +232,3 @@ export function TermsPage() {
     </div>
   );
 }
-
-export default TermsPage;
