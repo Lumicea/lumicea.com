@@ -50,30 +50,29 @@ export function Header() {
   return (
     <>
       {/* Top Banner - Only show when not scrolled */}
-      {!isScrolled && (
-        <div className="bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white">
+      <div
+        className={cn(
+          'fixed top-0 z-50 w-full transition-all duration-500',
+          isScrolled 
+            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50' 
+            : 'bg-transparent'
+        {/* Top Banner - Only show when not scrolled */}
+        <div className={cn(
+          'transition-all duration-500 overflow-hidden bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white',
+          isScrolled ? 'h-0 opacity-0' : 'h-auto opacity-100'
+        )}>
           <div className="lumicea-container py-3">
             <p className="text-center text-sm font-medium flex items-center justify-center gap-2 animate-fade-in-down">
-              <Star className="h-4 w-4 text-lumicea-gold animate-pulse" />
+              <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
               Free UK shipping on orders over £50 • Lifetime warranty on all pieces
-              <Star className="h-4 w-4 text-lumicea-gold animate-pulse" />
+              <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
             </p>
           </div>
         </div>
-      )}
-
-      {/* Main Header */}
-      <header
-        className={cn(
-          'fixed top-0 z-50 w-full transition-all duration-500',
-          isScrolled
-            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50'
-            : 'bg-transparent',
-          'mt-0' // Remove dynamic margin and handle in container instead
-        )}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
+        
+        {/* Main Header */}
+        <header>
+          <div className="lumicea-container flex items-center justify-between h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2 md:space-x-3 group z-10">
               <div className="relative">
@@ -143,6 +142,28 @@ export function Header() {
                 )}
               >
                 Custom Orders
+              </Link>
+              <Link
+                to="/size-guide"
+                className={cn(
+                  "text-sm font-medium transition-colors duration-300",
+                  isScrolled
+                    ? "text-gray-600 hover:text-lumicea-navy"
+                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                )}
+              >
+                Size Guide
+              </Link>
+              <Link
+                to="/care"
+                className={cn(
+                  "text-sm font-medium transition-colors duration-300",
+                  isScrolled
+                    ? "text-gray-600 hover:text-lumicea-navy"
+                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                )}
+              >
+                Care Instructions
               </Link>
             </nav>
 
@@ -394,8 +415,8 @@ export function Header() {
               </Sheet>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
     </>
   );
 }
