@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Gem, Heart, Award, Star, Sparkles, Calendar } from 'lucide-react';
+import { Gem, Heart, Award, Star, Sparkles, Calendar, Globe } from 'lucide-react';
 
 const timelineEvents = [
   {
