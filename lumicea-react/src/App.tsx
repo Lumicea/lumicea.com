@@ -31,6 +31,7 @@ import { TermsPage } from "@/pages/legal/terms.tsx";
 import { EarringsPage } from "@/pages/categories/earrings.tsx";
 import { NoseRingsPage } from "@/pages/categories/nose-rings.tsx";
 import { ProductDetailPage } from "@/pages/products/detail.tsx";
+import { SizeGuidePage } from "@/pages/size-guide.tsx";
 
 // Admin Pages
 import { AdminDashboard } from "@/pages/admin/dashboard/index.tsx";
