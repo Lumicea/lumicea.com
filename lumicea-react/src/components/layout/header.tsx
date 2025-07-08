@@ -54,15 +54,18 @@ export function Header() {
       <div
         className={cn(
           'fixed top-0 z-50 w-full transition-all duration-500',
-          isScrolled 
-            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50' 
+          isScrolled
+            ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50'
             : 'bg-transparent'
-        )}>
+        )}
+      >
         {/* Top Banner - Only show when not scrolled */}
-        <div className={cn(
-          'transition-all duration-500 overflow-hidden bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white',
-          isScrolled ? 'h-0 opacity-0' : 'h-auto opacity-100'
-        )}>
+        <div
+          className={cn(
+            'transition-all duration-500 overflow-hidden bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white',
+            isScrolled ? 'h-0 opacity-0' : 'h-auto opacity-100'
+          )}
+        >
           <div className="lumicea-container py-3">
             <p className="text-center text-sm font-medium flex items-center justify-center gap-2 animate-fade-in-down">
               <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
@@ -71,12 +74,15 @@ export function Header() {
             </p>
           </div>
         </div>
-        
+
         {/* Main Header */}
         <header>
           <div className="lumicea-container flex items-center justify-between h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2 md:space-x-3 group z-10">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 md:space-x-3 group z-10"
+            >
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-lumicea-gold to-lumicea-gold-light rounded-xl blur-lg opacity-0 group-hover:opacity-30 transition-opacity duration-300" />
                 <div className="relative bg-gradient-to-br from-lumicea-navy to-lumicea-navy-light p-3 rounded-xl group-hover:scale-110 transition-transform duration-300">
@@ -84,16 +90,20 @@ export function Header() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className={cn(
-                  "text-2xl md:text-3xl font-bold transition-colors duration-300",
-                  isScrolled ? "lumicea-text-gradient" : "text-white drop-shadow-lg"
-                )}>
+                <span
+                  className={cn(
+                    'text-2xl md:text-3xl font-bold transition-colors duration-300',
+                    isScrolled ? 'lumicea-text-gradient' : 'text-white drop-shadow-lg'
+                  )}
+                >
                   Lumicea
                 </span>
-                <span className={cn(
-                  "text-xs font-medium transition-colors duration-300",
-                  isScrolled ? "text-gray-600" : "text-white/90 drop-shadow-sm"
-                )}>
+                <span
+                  className={cn(
+                    'text-xs font-medium transition-colors duration-300',
+                    isScrolled ? 'text-gray-600' : 'text-white/90 drop-shadow-sm'
+                  )}
+                >
                   Handcrafted Excellence
                 </span>
               </div>
@@ -104,10 +114,10 @@ export function Header() {
               <Link
                 to="/categories/nose-rings"
                 className={cn(
-                  "text-sm font-medium transition-colors duration-300",
+                  'text-sm font-medium transition-colors duration-300',
                   isScrolled
-                    ? "text-gray-600 hover:text-lumicea-navy"
-                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                    ? 'text-gray-600 hover:text-lumicea-navy'
+                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
                 )}
               >
                 Nose Rings
@@ -115,10 +125,10 @@ export function Header() {
               <Link
                 to="/categories/earrings"
                 className={cn(
-                  "text-sm font-medium transition-colors duration-300",
+                  'text-sm font-medium transition-colors duration-300',
                   isScrolled
-                    ? "text-gray-600 hover:text-lumicea-navy"
-                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                    ? 'text-gray-600 hover:text-lumicea-navy'
+                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
                 )}
               >
                 Earrings
@@ -126,10 +136,10 @@ export function Header() {
               <Link
                 to="/collections"
                 className={cn(
-                  "text-sm font-medium transition-colors duration-300",
+                  'text-sm font-medium transition-colors duration-300',
                   isScrolled
-                    ? "text-gray-600 hover:text-lumicea-navy"
-                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                    ? 'text-gray-600 hover:text-lumicea-navy'
+                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
                 )}
               >
                 Collections
@@ -137,10 +147,10 @@ export function Header() {
               <Link
                 to="/custom"
                 className={cn(
-                  "text-sm font-medium transition-colors duration-300",
+                  'text-sm font-medium transition-colors duration-300',
                   isScrolled
-                    ? "text-gray-600 hover:text-lumicea-navy"
-                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                    ? 'text-gray-600 hover:text-lumicea-navy'
+                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
                 )}
               >
                 Custom Orders
@@ -148,10 +158,10 @@ export function Header() {
               <Link
                 to="/size-guide"
                 className={cn(
-                  "text-sm font-medium transition-colors duration-300",
+                  'text-sm font-medium transition-colors duration-300',
                   isScrolled
-                    ? "text-gray-600 hover:text-lumicea-navy"
-                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                    ? 'text-gray-600 hover:text-lumicea-navy'
+                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
                 )}
               >
                 Size Guide
@@ -159,10 +169,10 @@ export function Header() {
               <Link
                 to="/care"
                 className={cn(
-                  "text-sm font-medium transition-colors duration-300",
+                  'text-sm font-medium transition-colors duration-300',
                   isScrolled
-                    ? "text-gray-600 hover:text-lumicea-navy"
-                    : "text-white/90 hover:text-lumicea-gold drop-shadow-sm"
+                    ? 'text-gray-600 hover:text-lumicea-navy'
+                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
                 )}
               >
                 Care Instructions
@@ -177,10 +187,10 @@ export function Header() {
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "transition-colors duration-300 rounded-xl",
+                    'transition-colors duration-300 rounded-xl',
                     isScrolled
-                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
-                      : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                      ? 'text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10'
+                      : 'text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm'
                   )}
                 >
                   <Search className="h-5 w-5" />
@@ -197,10 +207,10 @@ export function Header() {
                         variant="ghost"
                         size="icon"
                         className={cn(
-                          "transition-colors duration-300 rounded-xl",
+                          'transition-colors duration-300 rounded-xl',
                           isScrolled
-                            ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
-                            : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                            ? 'text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10'
+                            : 'text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm'
                         )}
                       >
                         <User className="h-5 w-5" />
@@ -210,18 +220,26 @@ export function Header() {
                         <div className="p-3 border-b">
                           <div className="flex flex-col space-y-1">
                             <p className="text-sm font-medium leading-none">Account</p>
-                            <p className="text-xs leading-none text-gray-500">{user.email}</p>
+                            <p className="text-xs leading-none text-gray-500">
+                              {user.email}
+                            </p>
                           </div>
                         </div>
                         <div className="p-2">
-                          <Link to="/account" className="flex items-center p-2 rounded-md hover:bg-gray-100">
+                          <Link
+                            to="/account"
+                            className="flex items-center p-2 rounded-md hover:bg-gray-100"
+                          >
                             <Settings className="mr-2 h-4 w-4" />
                             <span>Settings</span>
                           </Link>
                           {(userRole === 'admin' || userRole === 'editor') && (
                             <>
                               <div className="my-1 border-t"></div>
-                              <Link to="/admin" className="flex items-center p-2 rounded-md hover:bg-gray-100">
+                              <Link
+                                to="/admin"
+                                className="flex items-center p-2 rounded-md hover:bg-gray-100"
+                              >
                                 <LayoutDashboard className="mr-2 h-4 w-4" />
                                 <span>Admin Dashboard</span>
                               </Link>
@@ -245,10 +263,10 @@ export function Header() {
                         variant="ghost"
                         size="sm"
                         className={cn(
-                          "transition-colors duration-300",
+                          'transition-colors duration-300',
                           isScrolled
-                            ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
-                            : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                            ? 'text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10'
+                            : 'text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm'
                         )}
                         asChild
                       >
@@ -267,18 +285,15 @@ export function Header() {
               )}
 
               {/* Cart */}
-              <Link
-                to="/cart"
-                className="relative"
-              >
+              <Link to="/cart" className="relative">
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "transition-colors duration-300 rounded-xl",
+                    'transition-colors duration-300 rounded-xl',
                     isScrolled
-                      ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10"
-                      : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                      ? 'text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10'
+                      : 'text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm'
                   )}
                 >
                   <ShoppingBag className="h-5 w-5" />
@@ -298,41 +313,63 @@ export function Header() {
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "lg:hidden transition-colors duration-300 rounded-xl",
-                      isScrolled 
-                        ? "text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10" 
-                        : "text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm"
+                      'lg:hidden transition-colors duration-300 rounded-xl',
+                      isScrolled
+                        ? 'text-gray-600 hover:text-lumicea-navy hover:bg-lumicea-navy/10'
+                        : 'text-white hover:text-lumicea-gold hover:bg-white/10 drop-shadow-sm'
                     )}
                   >
                     <Menu className="h-5 w-5" />
                     <span className="sr-only">Open menu</span>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-full max-w-xs pt-16 overflow-y-auto">
+                <SheetContent
+                  side="right"
+                  className="w-full max-w-xs pt-16 overflow-y-auto bg-white" // <--- ADDED bg-white HERE
+                >
                   <div className="flex flex-col h-full pb-10">
                     {/* Auth Section */}
                     {!loading && (
                       <div className="mb-6 px-4">
                         {user ? (
                           <div className="p-4 bg-lumicea-navy/5 rounded-lg">
-                            <p className="font-medium text-gray-900">Welcome back!</p>
-                            <p className="text-sm text-gray-600">{user.email}</p>
+                            <p className="font-medium text-gray-900">
+                              Welcome back!
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {user.email}
+                            </p>
                             <div className="flex space-x-2 mt-3">
                               <SheetClose asChild>
-                                <Button asChild size="sm" variant="outline" className="flex-1">
+                                <Button
+                                  asChild
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1"
+                                >
                                   <Link to="/account">Account</Link>
                                 </Button>
                               </SheetClose>
-                              <Button onClick={handleSignOut} size="sm" variant="outline" className="flex-1">
+                              <Button
+                                onClick={handleSignOut}
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                              >
                                 Sign Out
                               </Button>
                             </div>
-                            
+
                             {/* Admin access check */}
                             {(userRole === 'admin' || userRole === 'editor') && (
                               <div className="mt-3">
                                 <SheetClose asChild>
-                                  <Button asChild to="/admin" size="sm" className="w-full lumicea-button-primary">
+                                  <Button
+                                    asChild
+                                    to="/admin"
+                                    size="sm"
+                                    className="w-full lumicea-button-primary"
+                                  >
                                     <Link to="/admin">Admin Dashboard</Link>
                                   </Button>
                                 </SheetClose>
@@ -342,12 +379,18 @@ export function Header() {
                         ) : (
                           <div className="flex space-x-2">
                             <SheetClose asChild>
-                              <Button asChild className="flex-1 lumicea-button-secondary">
+                              <Button
+                                asChild
+                                className="flex-1 lumicea-button-secondary"
+                              >
                                 <Link to="/login">Sign In</Link>
                               </Button>
                             </SheetClose>
                             <SheetClose asChild>
-                              <Button asChild className="flex-1 lumicea-button-primary">
+                              <Button
+                                asChild
+                                className="flex-1 lumicea-button-primary"
+                              >
                                 <Link to="/signup">Sign Up</Link>
                               </Button>
                             </SheetClose>
@@ -355,59 +398,89 @@ export function Header() {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Navigation Links */}
                     <div className="px-4 space-y-1 flex-1 overflow-y-auto">
                       <SheetClose asChild>
-                        <Link to="/categories/nose-rings" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/categories/nose-rings"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Nose Rings</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/categories/earrings" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/categories/earrings"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Earrings</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/collections" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/collections"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Collections</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/custom" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/custom"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Custom Orders</span>
                         </Link>
                       </SheetClose>
-                      
+
                       <div className="border-t my-2 border-gray-200"></div>
-                      
+
                       <SheetClose asChild>
-                        <Link to="/about" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/about"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">About</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/blog" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/blog"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Blog</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/contact" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/contact"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Contact</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/size-guide" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/size-guide"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Size Guide</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/care" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/care"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Care Instructions</span>
                         </Link>
                       </SheetClose>
                       <SheetClose asChild>
-                        <Link to="/gift-cards" className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5">
+                        <Link
+                          to="/gift-cards"
+                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
+                        >
                           <span className="font-medium">Gift Cards</span>
                         </Link>
                       </SheetClose>
