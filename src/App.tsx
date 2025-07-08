@@ -17,3 +17,5 @@
          <Route path="/cart" element={<CartPage />} />
    )
  }
+   )
+ }
