@@ -1,36 +1,108 @@
-@@ .. @@
-   }
- }
- 
-+/* Sheet component mobile adjustments */
-+.fixed.z-50.w-3\/4.h-full {
-+  max-width: 100vw;
-+  overflow-y: auto; 
-+}
-+
-+/* Fix for horizontal scrolling on mobile */
-+body {
-+  overflow-x: hidden;
-+  width: 100%;
-+}
-+
-+/* Mobile responsiveness fixes */
-+@media (max-width: 640px) {
-+  .container {
-+    padding-left: 1rem;
-+    padding-right: 1rem;
-+  }
-+  
-+  /* Smaller text for mobile */
-+  h1.text-5xl {
-+    font-size: 2.5rem;
-+  }
-+  
-+  h1.text-4xl {
-+    font-size: 2rem;
-+  }
-+}
-+
- @layer base {
-   * {
-     @apply border-border;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode default colors based on shadcn/ui standard values */
+    --background: 0 0% 100%; /* White */
+    --foreground: 222.2 84% 4.9%; /* Near-black */
+
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 222.2 84% 4.9%; /* Near-black */
+
+    --popover: 0 0% 100%; /* Explicitly set to White for dropdowns */
+    --popover-foreground: 222.2 84% 4.9%; /* Near-black */
+
+    --primary: 222.2 47.4% 11.2%; /* Primary brand color */
+    --primary-foreground: 210 40% 98%; /* White text on primary */
+
+    --secondary: 210 40% 96.1%; /* Secondary accent color */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* Near-black text on secondary */
+
+    --muted: 210 40% 96.1%; /* Muted background */
+    --muted-foreground: 215.4 16.3% 46.9%; /* Muted text */
+
+    --accent: 210 40% 96.1%; /* Accent background for hover/focus */
+    --accent-foreground: 222.2 47.4% 11.2%; /* Accent text */
+
+    --destructive: 0 84.2% 60.2%; /* Destructive red */
+    --destructive-foreground: 210 40% 98%; /* White text on destructive */
+
+    --border: 214.3 31.8% 91.4%; /* Border color */
+    --input: 214.3 31.8% 91.4%; /* Input border color */
+    --ring: 222.2 84% 4.9%; /* Ring color for focus states */
+
+    --radius: 0.5rem; /* Default border radius for components */
+  }
+
+  .dark {
+    /* Dark mode default colors based on shadcn/ui standard values */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%; /* Dark background for popovers in dark mode */
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* --- Custom styles from your project (retained) --- */
+
+/* Sheet component mobile adjustments */
+.fixed.z-50.w-3\/4.h-full {
+  max-width: 100vw;
+  overflow-y: auto;
+}
+
+/* Fix for horizontal scrolling on mobile */
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Mobile responsiveness fixes */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Smaller text for mobile */
+  h1.text-5xl {
+    font-size: 2.5rem;
+  }
+  
+  h1.text-4xl {
+    font-size: 2rem;
+  }
