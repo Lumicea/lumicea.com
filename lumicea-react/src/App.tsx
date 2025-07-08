@@ -1,6 +1,9 @@
 // lumicea-react/src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
+// Import ScrollToTop component
+import { ScrollToTop } from '@/components/scroll-to-top';
+
 // Import the Header component
 import { Header } from './components/layout/header'; // Ensure this path is correct
 
@@ -20,9 +23,8 @@ import { CustomPage } from "@/pages/custom.tsx";
 import { CarePage } from "@/pages/care.tsx";
 import { CollectionsPage } from "@/pages/collections.tsx";
 import { SettingsPage } from "@/pages/settings.tsx";
-import { SizeGuidePage } from "@/pages/size-guide.tsx";
 import { LoginPage } from "@/pages/auth/login.tsx";
-import { SignupPage } from "@/pages/auth/signup.tsx"; // CORRECTED: Changed '=' to 'from'
+import { SignupPage } from "@/pages/auth/signup.tsx";
 import { PrivacyPage } from "@/pages/legal/privacy.tsx";
 import { CookiesPage } from "@/pages/legal/cookies.tsx";
 import { TermsPage } from "@/pages/legal/terms.tsx";
@@ -44,6 +46,7 @@ import { CookieConsent } from './components/ui/cookie-consent.tsx';
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
