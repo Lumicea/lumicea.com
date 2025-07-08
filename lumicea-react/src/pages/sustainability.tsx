@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Leaf, Recycle, PackageCheck, Users, Compass, Check, Gem, Hammer } from 'lucide-react';
+import { Leaf, Recycle, PackageCheck, Users, Compass, Check, Gem, Hammer, Award } from 'lucide-react';
 
 const commitments = [
   {
