@@ -15,6 +15,12 @@ import { CheckoutPage } from "@/pages/checkout/index.tsx";
 import { WishlistPage } from "@/pages/wishlist/index.tsx";
 import { SearchPage } from "@/pages/search/index.tsx";
 import { GiftCardsPage } from "@/pages/gift-cards/index.tsx";
+import { ShippingPage } from "@/pages/shipping.tsx";
+import { FAQPage } from "@/pages/faq.tsx";
+import { StoryPage } from "@/pages/story.tsx";
+import { SustainabilityPage } from "@/pages/sustainability.tsx";
+import { CareersPage } from "@/pages/careers.tsx";
+import { AccessibilityPage } from "@/pages/accessibility.tsx";
 import { CheckoutSuccessPage } from "@/pages/checkout/success/index.tsx";
 import { AboutPage } from "@/pages/about.tsx";
 import { BlogPage } from "@/pages/blog.tsx";
@@ -68,6 +74,12 @@ function App() {
         <Route path="/legal/privacy" element={<PrivacyPage />} />
         <Route path="/legal/cookies" element={<CookiesPage />} />
         <Route path="/legal/terms" element={<TermsPage />} />
+        <Route path="/shipping" element={<ShippingPage />} />
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/story" element={<StoryPage />} />
+        <Route path="/sustainability" element={<SustainabilityPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/accessibility" element={<AccessibilityPage />} />
         <Route path="/size-guide" element={<SizeGuidePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
