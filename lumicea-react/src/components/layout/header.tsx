@@ -56,6 +56,7 @@ export function Header() {
           isScrolled 
             ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50' 
             : 'bg-transparent'
+        )}>
         {/* Top Banner - Only show when not scrolled */}
         <div className={cn(
           'transition-all duration-500 overflow-hidden bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white',
