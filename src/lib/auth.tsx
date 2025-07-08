@@ -3,15 +3,15 @@ import { supabase } from './supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { Tables } from './supabase';
 
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   userRole: string | null;
   userRole: string | null;
+  userRole: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +26,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -47,12 +48,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching user role:', error);
+          setUserRole(null);
+        } else if (data) {
+          setUserRole(data.role);
+        }
+        
+        setLoading(false);
+      } else {
+        setUserRole(null);
+        setLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -114,10 +140,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     userRole,
     userRole,
+    userRole,
     loading,
     signIn,
     signUp,
-    signOut,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
