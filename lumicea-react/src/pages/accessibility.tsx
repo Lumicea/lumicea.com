@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Monitor, Headphones, MousePointer, AlignLeft, MessageSquare, FileText, Code } from 'lucide-react';
+import { Eye, Monitor, Headphones, MousePointer, AlignLeft, MessageSquare, FileText, Code, Check } from 'lucide-react';
 
 export function AccessibilityPage() {
   return (
