@@ -77,7 +77,7 @@ interface Return {
   created_at: string;
 }
 
-export default function ReturnsPage() {
+export default function AdminReturnsPage() {
   const [returns, setReturns] = useState<Return[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
