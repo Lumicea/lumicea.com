@@ -28,7 +28,13 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 
-export function Header() {
+// Define props for the Header component
+interface HeaderProps {
+  showTopBanner?: boolean; // New prop to control the top banner visibility
+}
+
+// Update the Header function signature to accept the new prop
+export function Header({ showTopBanner = true }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { itemCount } = useCart();
   const navigate = useNavigate();
@@ -50,7 +56,7 @@ export function Header() {
 
   return (
     <>
-      {/* Top Banner - Only show when not scrolled */}
+      {/* Top Banner Wrapper - Only show when not scrolled AND showTopBanner is true */}
       <div
         className={cn(
           'fixed top-0 z-50 w-full transition-all duration-500',
@@ -59,21 +65,23 @@ export function Header() {
             : 'bg-transparent'
         )}
       >
-        {/* Top Banner - Only show when not scrolled */}
-        <div
-          className={cn(
-            'transition-all duration-500 overflow-hidden bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white',
-            isScrolled ? 'h-0 opacity-0' : 'h-auto opacity-100'
-          )}
-        >
-          <div className="lumicea-container py-3">
-            <p className="text-center text-sm font-medium flex items-center justify-center gap-2 animate-fade-in-down">
-              <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
-              Free UK shipping on orders over £50 • Lifetime warranty on all pieces
-              <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
-            </p>
+        {/* Conditional rendering for the free shipping banner */}
+        {showTopBanner && (
+          <div
+            className={cn(
+              'transition-all duration-500 overflow-hidden bg-gradient-to-r from-lumicea-navy via-lumicea-navy-light to-lumicea-navy text-white',
+              isScrolled ? 'h-0 opacity-0' : 'h-auto opacity-100'
+            )}
+          >
+            <div className="lumicea-container py-3">
+              <p className="text-center text-sm font-medium flex items-center justify-center gap-2 animate-fade-in-down">
+                <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
+                Free UK shipping on orders over £25
+                <Sparkles className="h-4 w-4 text-lumicea-gold animate-pulse" />
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Main Header */}
         <header>
@@ -325,7 +333,7 @@ export function Header() {
                 </SheetTrigger>
                 <SheetContent
                   side="right"
-                  className="w-full max-w-xs pt-16 overflow-y-auto bg-white" // <--- ADDED bg-white HERE
+                  className="w-full max-w-xs pt-16 overflow-y-auto bg-white"
                 >
                   <div className="flex flex-col h-full pb-10">
                     {/* Auth Section */}
