@@ -313,25 +313,25 @@ export default function MarketingDashboardPage() {
       {/* Navigation Buttons */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Button asChild>
-          <Link to="/admin/promotions/index.tsx" className="flex items-center justify-center space-x-2">
+          <Link to="/admin/promotions" className="flex items-center justify-center space-x-2">
             <Megaphone className="h-5 w-5" />
             <span>Promotions</span>
           </Link>
         </Button>
         <Button asChild>
-          <Link to="/admin/campaigns/index.tsx" className="flex items-center justify-center space-x-2">
+          <Link to="/admin/campaigns" className="flex items-center justify-center space-x-2">
             <Mail className="h-5 w-5" />
             <span>Email Campaigns</span>
           </Link>
         </Button>
         <Button asChild>
-          <Link to="/admin/seo/index.tsx" className="flex items-center justify-center space-x-2">
+          <Link to="/admin/seo" className="flex items-center justify-center space-x-2">
             <Search className="h-5 w-5" />
             <span>SEO Settings</span>
           </Link>
         </Button>
         <Button asChild>
-          <Link to="/admin/banners/index.tsx" className="flex items-center justify-center space-x-2">
+          <Link to="/admin/banners" className="flex items-center justify-center space-x-2">
             <ImageIcon className="h-5 w-5" />
             <span>Banners</span>
           </Link>
