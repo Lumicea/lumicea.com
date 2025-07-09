@@ -78,7 +78,7 @@ interface TaxRate {
   created_at: string;
 }
 
-export default function ShippingPage() {
+export default function AdminShippingPage() {
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
   const [loading, setLoading] = useState(true);
