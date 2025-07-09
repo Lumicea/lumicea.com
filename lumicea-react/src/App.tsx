@@ -51,7 +51,7 @@ import { AdminPagesPage } from "@/pages/admin/pages/index.tsx";
 import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 
 // New Admin Page Imports based on the user's list
-import { AdminCategoriesPage } from "@/pages/admin/categories/index.tsx";
+import  AdminCategoriesPage from "@/pages/admin/categories/index.tsx";
 import { AdminBannersPage } from "@/pages/admin/banners/index.tsx";
 import { AdminReturnsPage } from "@/pages/admin/returns/index.tsx";
 import { AdminSeoPage } from "@/pages/admin/seo/index.tsx";
