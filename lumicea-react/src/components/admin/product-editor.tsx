@@ -650,6 +650,10 @@ export function ProductEditor({ productId, onBack, onSave }: ProductEditorProps)
                     checked={productData.is_active}
                     onCheckedChange={(checked) => handleInputChange('is_active', checked)}
                     id="is_active"
+                    // Conditional styling for the track and thumb
+                    className={`${
+                      productData.is_active ? 'data-[state=checked]:bg-green-500' : 'data-[state=unchecked]:bg-red-500'
+                    }`}
                   />
                   <Label htmlFor="is_active">Active</Label>
                 </div>
@@ -658,6 +662,10 @@ export function ProductEditor({ productId, onBack, onSave }: ProductEditorProps)
                     checked={productData.is_featured}
                     onCheckedChange={(checked) => handleInputChange('is_featured', checked)}
                     id="is_featured"
+                    // Conditional styling for the track and thumb
+                    className={`${
+                      productData.is_featured ? 'data-[state=checked]:bg-green-500' : 'data-[state=unchecked]:bg-red-500'
+                    }`}
                   />
                   <Label htmlFor="is_featured">Featured</Label>
                 </div>
@@ -666,6 +674,10 @@ export function ProductEditor({ productId, onBack, onSave }: ProductEditorProps)
                     checked={productData.requires_shipping}
                     onCheckedChange={(checked) => handleInputChange('requires_shipping', checked)}
                     id="requires_shipping"
+                    // Conditional styling for the track and thumb
+                    className={`${
+                      productData.requires_shipping ? 'data-[state=checked]:bg-green-500' : 'data-[state=unchecked]:bg-red-500'
+                    }`}
                   />
                   <Label htmlFor="requires_shipping">Requires Shipping</Label>
                 </div>
@@ -792,6 +804,10 @@ export function ProductEditor({ productId, onBack, onSave }: ProductEditorProps)
                       checked={variant.is_active}
                       onCheckedChange={(checked) => handleVariantChange(index, 'is_active', checked)}
                       id={`variant-${index}-active`}
+                      // Conditional styling for the track and thumb
+                      className={`${
+                        variant.is_active ? 'data-[state=checked]:bg-green-500' : 'data-[state=unchecked]:bg-red-500'
+                      }`}
                     />
                     <Label htmlFor={`variant-${index}-active`}>Active</Label>
                   </div>
