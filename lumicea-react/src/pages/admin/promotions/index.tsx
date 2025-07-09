@@ -317,7 +317,7 @@ export default function PromotionsPage() {
             <div className="flex items-center">
               <Users className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className className="text-sm font-medium text-gray-600">Total Usage</p>
+                <p className="text-sm font-medium text-gray-600">Total Usage</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {promotions.reduce((sum, p) => sum + p.current_usage_count, 0)}
                 </p>
