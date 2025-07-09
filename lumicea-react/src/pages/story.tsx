@@ -54,7 +54,7 @@ export function StoryPage() {
   return (
     <div className="min-h-screen">
       <Header />
-      
+
       <main>
         {/* Hero Section */}
         <section className="bg-lumicea-gradient text-white py-16">
@@ -68,7 +68,7 @@ export function StoryPage() {
             </p>
           </div>
         </section>
-        
+
         {/* Founder's Message */}
         <section className="py-16">
           <div className="lumicea-container">
@@ -80,17 +80,17 @@ export function StoryPage() {
                 </h2>
                 <div className="space-y-4">
                   <p className="text-gray-700 leading-relaxed">
-                    "I've always been fascinated by the way jewelry can transform not just an outfit, but how we feel about ourselves. 
+                    "I've always been fascinated by the way jewelry can transform not just an outfit, but how we feel about ourselves.
                     My journey began with a simple bead and a piece of wire, crafting small trinkets at my kitchen table."
                   </p>
                   <p className="text-gray-700 leading-relaxed">
-                    "What started as a creative outlet during a challenging time in my life quickly became a passion. 
-                    Each piece I created was infused with intention and care, and the joy I saw when someone wore my 
+                    "What started as a creative outlet during a challenging time in my life quickly became a passion.
+                    Each piece I created was infused with intention and care, and the joy I saw when someone wore my
                     jewelry became the foundation of what Lumicea is today."
                   </p>
                   <p className="text-gray-700 leading-relaxed">
-                    "Our name 'Lumicea' comes from 'lumen' (light) and 'cea' (of the earth) – representing our mission 
-                    to create jewelry that brings light and beauty while respecting our planet and communities. 
+                    "Our name 'Lumicea' comes from 'lumen' (light) and 'cea' (of the earth) – representing our mission
+                    to create jewelry that brings light and beauty while respecting our planet and communities.
                     Every piece we craft is a small work of art, designed to be worn and loved for generations."
                   </p>
                   <p className="text-right text-lg font-medium text-lumicea-navy mt-6">
@@ -112,7 +112,7 @@ export function StoryPage() {
             </div>
           </div>
         </section>
-        
+
         {/* Timeline */}
         <section className="py-16 bg-gray-50 relative overflow-hidden">
           <div className="absolute inset-0 opacity-30">
@@ -128,11 +128,11 @@ export function StoryPage() {
                 From a small workshop to an international brand, follow our growth and evolution.
               </p>
             </div>
-            
+
             <div className="relative">
               {/* Timeline line */}
               <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-lumicea-navy/10 z-0 hidden md:block"></div>
-              
+
               {/* Timeline events */}
               <div className="space-y-12">
                 {timelineEvents.map((event, index) => (
@@ -145,9 +145,9 @@ export function StoryPage() {
                         </div>
                         <div className="mt-3 text-2xl font-bold text-lumicea-navy">{event.year}</div>
                       </div>
-                      
+
                       {/* Content */}
-                      <Card className={`w-full max-w-lg ${index % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
+                      <Card className={`w-full max-w-lg bg-white ${index % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
                         <CardContent className="p-6">
                           <h3 className="text-xl font-bold text-gray-900 mb-3">{event.title}</h3>
                           <p className="text-gray-700">{event.description}</p>
@@ -160,7 +160,7 @@ export function StoryPage() {
             </div>
           </div>
         </section>
-        
+
         {/* Our Artisans */}
         <section className="py-16">
           <div className="lumicea-container">
@@ -173,7 +173,7 @@ export function StoryPage() {
                 Meet the skilled craftspeople who bring our designs to life with their exceptional talents.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[1, 2, 3].map((artisan) => (
                 <Card key={artisan} className="overflow-hidden group">
@@ -193,7 +193,7 @@ export function StoryPage() {
                   <CardContent className="p-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">The Artistry</h3>
                     <p className="text-gray-700">
-                      Each piece passes through the hands of our skilled artisans who combine traditional 
+                      Each piece passes through the hands of our skilled artisans who combine traditional
                       techniques with innovative approaches to create jewelry that's both timeless and contemporary.
                     </p>
                   </CardContent>
@@ -202,7 +202,7 @@ export function StoryPage() {
             </div>
           </div>
         </section>
-        
+
         {/* Vision for the Future */}
         <section className="py-16 bg-lumicea-gradient text-white">
           <div className="lumicea-container">
@@ -212,8 +212,8 @@ export function StoryPage() {
                 Our Vision for the Future
               </h2>
               <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                As we continue to grow, our commitment to quality, sustainability, and artisanal craftsmanship 
-                remains unwavering. We're excited to expand our collections, reach new customers globally, 
+                As we continue to grow, our commitment to quality, sustainability, and artisanal craftsmanship
+                remains unwavering. We're excited to expand our collections, reach new customers globally,
                 and continue innovating while honoring traditional jewelry-making techniques.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
@@ -240,7 +240,7 @@ export function StoryPage() {
           </div>
         </section>
       </main>
-      
+
       <Footer />
     </div>
   );
