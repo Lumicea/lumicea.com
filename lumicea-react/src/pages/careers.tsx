@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Briefcase, MapPin, Clock, PoundSterling, Star, Users, Heart, Send, Coffee } from 'lucide-react';
+import { Briefcase, MapPin, Clock, PoundSterling, Star, Users, Heart, Send, Coffee, Leaf } from 'lucide-react';
 
 const openPositions = [
   {
