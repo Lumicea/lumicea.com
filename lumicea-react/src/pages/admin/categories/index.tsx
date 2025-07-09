@@ -80,7 +80,7 @@ interface Tag {
   product_count?: number;
 }
 
-export default function CategoriesPage() {
+export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
@@ -732,5 +732,3 @@ export default function CategoriesPage() {
     </div>
   );
 }
-
-export default AdminCategoriesPage;
