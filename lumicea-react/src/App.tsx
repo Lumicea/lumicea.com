@@ -60,6 +60,7 @@ import  AdminCampaignsPage  from "@/pages/admin/campaigns/index.tsx";
 import  AdminInventoryPage  from "@/pages/admin/inventory/index.tsx";
 import  AdminShippingPage  from "@/pages/admin/shipping/index.tsx";
 import  AdminSettingsPage  from "@/pages/admin/settings/index.tsx";
+import  AdminAnalyticsPage  from "@/pages/admin/analytics/index.tsx";
 import  AdminMarketingPage  from "@/pages/admin/marketing/index.tsx"; // The marketing dashboard itself
 
 // UI Components
