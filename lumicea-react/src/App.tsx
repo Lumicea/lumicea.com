@@ -1,11 +1,11 @@
 // lumicea-react/src/App.tsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // Import useLocation
 
 // Import ScrollToTop component
 import { ScrollToTop } from '@/components/scroll-to-top';
 
 // Import the Header component
-import { Header } from './components/layout/header'; // Ensure this path is correct
+import { Header } from './components/layout/header';
 
 // Pages
 import { HomePage } from "@/pages/home/index.tsx";
@@ -50,11 +50,15 @@ import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 // UI Components
 import { CookieConsent } from './components/ui/cookie-consent.tsx';
 
-function App() {
+// Create a wrapper component to access useLocation
+function AppContent() {
+  const location = useLocation(); // Get the current location object
+  const isAdminPage = location.pathname.startsWith('/admin'); // Check if path starts with /admin
+
   return (
-    <Router>
-      <ScrollToTop />
-      <Header />
+    <>
+      {/* Conditionally pass the prop to Header based on the route */}
+      <Header showTopBanner={!isAdminPage} />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/cart" element={<CartPage />} />
@@ -99,6 +103,15 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <CookieConsent />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <ScrollToTop />
+      <AppContent /> {/* Render the new wrapper component */}
     </Router>
   );
 }
