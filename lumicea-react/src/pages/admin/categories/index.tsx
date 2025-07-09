@@ -732,3 +732,5 @@ export default function CategoriesPage() {
     </div>
   );
 }
+
+export AdminCategoriesPage
