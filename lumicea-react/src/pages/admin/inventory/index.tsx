@@ -61,7 +61,7 @@ interface StockAdjustment {
   notes: string;
 }
 
-export default function InventoryPage() {
+export default function AdminInventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
