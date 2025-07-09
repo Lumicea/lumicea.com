@@ -52,15 +52,15 @@ import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 
 // New Admin Page Imports based on the user's list
 import  AdminCategoriesPage from "@/pages/admin/categories/index.tsx";
-import { AdminBannersPage } from "@/pages/admin/banners/index.tsx";
-import { AdminReturnsPage } from "@/pages/admin/returns/index.tsx";
-import { AdminSeoPage } from "@/pages/admin/seo/index.tsx";
-import { AdminPromotionsPage } from "@/pages/admin/promotions/index.tsx";
-import { AdminCampaignsPage } from "@/pages/admin/campaigns/index.tsx";
-import { AdminInventoryPage } from "@/pages/admin/inventory/index.tsx";
-import { AdminShippingPage } from "@/pages/admin/shipping/index.tsx";
-import { AdminSettingsPage } from "@/pages/admin/settings/index.tsx";
-import { AdminMarketingPage } from "@/pages/admin/marketing/index.tsx"; // The marketing dashboard itself
+import  AdminBannersPage  from "@/pages/admin/banners/index.tsx";
+import  AdminReturnsPage  from "@/pages/admin/returns/index.tsx";
+import  AdminSeoPage  from "@/pages/admin/seo/index.tsx";
+import  AdminPromotionsPage  from "@/pages/admin/promotions/index.tsx";
+import  AdminCampaignsPage  from "@/pages/admin/campaigns/index.tsx";
+import  AdminInventoryPage  from "@/pages/admin/inventory/index.tsx";
+import  AdminShippingPage  from "@/pages/admin/shipping/index.tsx";
+import  AdminSettingsPage  from "@/pages/admin/settings/index.tsx";
+import  AdminMarketingPage  from "@/pages/admin/marketing/index.tsx"; // The marketing dashboard itself
 
 // UI Components
 import { CookieConsent } from './components/ui/cookie-consent.tsx';
