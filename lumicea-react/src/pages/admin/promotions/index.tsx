@@ -69,7 +69,7 @@ interface Promotion {
   created_at: string;
 }
 
-export default function PromotionsPage() {
+export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
