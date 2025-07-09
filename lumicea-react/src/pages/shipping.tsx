@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Truck, Clock, RotateCcw, PackageCheck, MapPin, Globe, Mail } from 'lucide-react';
+import { Truck, Clock, RotateCcw, PackageCheck, MapPin, Globe, Mail, Phone } from 'lucide-react';
 
 const deliveryMethods = [
   {
