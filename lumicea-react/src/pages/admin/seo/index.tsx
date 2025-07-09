@@ -39,7 +39,7 @@ import {
 import { supabase } from '@/lib/supabase';
 
 // Corrected import path for Card components (now three levels up)
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 
 interface SEOSettings {
   meta_title: string;
