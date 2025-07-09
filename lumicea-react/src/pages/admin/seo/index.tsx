@@ -34,7 +34,8 @@ import {
   Loader2,
   AlertTriangle,
   CheckCircle,
-  Info
+  Info,
+XCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
