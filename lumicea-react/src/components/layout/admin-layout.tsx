@@ -1,5 +1,7 @@
+// lumicea-react/src/components/layout/admin-layout.tsx
+
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom'; // Added Outlet import
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -19,7 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isUserAdmin } from '@/lib/admin-utils';
-import { User as SupabaseUser } from '@supabase/supabase-supabase-js'; // Corrected import for SupabaseUser type
+import { User as SupabaseUser } from '@supabase/supabase-js'; // Corrected import for SupabaseUser type
 
 const navigationItems = [
   {
@@ -93,53 +95,53 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-useEffect(() => {
-  // Define checkUser and fetchNotifications inside useEffect or memoize them
-  // to prevent them from being new functions on every render, which would
-  // cause useEffect to re-run unnecessarily.
-  const checkUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+  useEffect(() => {
+    // Define checkUser and fetchNotifications inside useEffect or memoize them
+    // to prevent them from being new functions on every render, which would
+    // cause useEffect to re-run unnecessarily.
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+        
+        const adminStatus = await isUserAdmin();
+        if (!adminStatus) {
+          navigate('/');
+          return;
+        }
+        
+        setUser(user);
+        setIsAdmin(adminStatus);
+      } catch (error) {
+        console.error('Error checking user:', error);
         navigate('/login');
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      const adminStatus = await isUserAdmin();
-      if (!adminStatus) {
-        navigate('/');
-        return;
+    };
+
+    const fetchNotifications = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('inventory_alerts')
+          .select('*')
+          .eq('is_read', false)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+        setNotifications(data || []);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
       }
-      
-      setUser(user);
-      setIsAdmin(adminStatus);
-    } catch (error) {
-      console.error('Error checking user:', error);
-      navigate('/login');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('inventory_alerts')
-        .select('*')
-        .eq('is_read', false)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
-
-  checkUser();
-  fetchNotifications();
-}, [navigate]); // Added navigate to dependency array
+    checkUser();
+    fetchNotifications();
+  }, [navigate]); // Added navigate to dependency array for useEffect
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -178,7 +180,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Admin Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
           {/* Logo and Mobile Menu */}
@@ -326,11 +328,12 @@ useEffect(() => {
           </nav>
         </aside>
 
-        {/* Main Content */}
-        {/* Changed pt-4 to pt-16 to account for the fixed header's height (h-16) */}
-        <main className="flex-1 lg:ml-64 pt-16">
-          <div className="px-4 sm:px-6 lg:px-8 pb-8">
-            {/* Outlet will be rendered here */}
+        {/* Main Content Area */}
+        {/* Removed pt-16 from here */}
+        <main className="flex-1 lg:ml-64"> 
+          {/* Apply the top padding directly to this inner content wrapper */}
+          <div className="px-4 sm:px-6 lg:px-8 pt-16 pb-8"> 
+            <Outlet /> {/* This is where the child routes will render */}
           </div>
         </main>
       </div>
