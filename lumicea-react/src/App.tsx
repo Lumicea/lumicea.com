@@ -134,6 +134,7 @@ function AppContent() {
           <Route path="shipping" element={<AdminShippingPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="marketing" element={<AdminMarketingPage />} /> {/* This is the marketing dashboard */}
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
 
         </Route>
 
