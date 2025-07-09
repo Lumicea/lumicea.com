@@ -90,9 +90,9 @@ body {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
   
-  .lumicea-button-primary {
-    @apply relative overflow-hidden bg-gradient-to-r from-lumicea-navy to-lumicea-navy-light hover:from-lumicea-navy-light hover:to-lumicea-navy text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
-  }
+ .lumicea-button-primary {
+    @apply relative overflow-hidden bg-gradient-to-r from-lumicea-navy to-lumicea-navy-light hover:from-lumicea-navy-light hover:to-lumicea-navy font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
+    color: white !important;
   
   .lumicea-button-primary::before {
     content: '';
