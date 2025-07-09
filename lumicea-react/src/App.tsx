@@ -38,7 +38,7 @@ import { PrivacyPage } from "@/pages/legal/privacy.tsx";
 import { CookiesPage } from "@/pages/legal/cookies.tsx";
 import { TermsPage } from "@/pages/legal/terms.tsx";
 import { EarringsPage } from "@/pages/categories/earrings.tsx";
-import { NoseRingsPage } -> "@/pages/categories/nose-rings.tsx";
+import { NoseRingsPage } from "@/pages/categories/nose-rings.tsx";
 import { ProductDetailPage } from "@/pages/products/detail.tsx";
 import { SizeGuidePage } from "@/pages/size-guide.tsx";
 
