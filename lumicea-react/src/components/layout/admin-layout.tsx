@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { isUserAdmin } from '@/lib/admin-utils';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-supabase-js'; // Corrected import for SupabaseUser type
 
 const navigationItems = [
   {
@@ -94,10 +94,9 @@ export function AdminLayout() {
   const location = useLocation();
 
 useEffect(() => {
-  checkUser();
-  fetchNotifications();
-}, []); // Remove functions from dependency array to avoid circular reference
-
+  // Define checkUser and fetchNotifications inside useEffect or memoize them
+  // to prevent them from being new functions on every render, which would
+  // cause useEffect to re-run unnecessarily.
   const checkUser = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +105,6 @@ useEffect(() => {
         return;
       }
       
-      // Check if user is admin
       const adminStatus = await isUserAdmin();
       if (!adminStatus) {
         navigate('/');
@@ -138,6 +136,10 @@ useEffect(() => {
       console.error('Error fetching notifications:', error);
     }
   };
+
+  checkUser();
+  fetchNotifications();
+}, [navigate]); // Added navigate to dependency array
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -325,7 +327,8 @@ useEffect(() => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-64 pt-4">
+        {/* Changed pt-4 to pt-16 to account for the fixed header's height (h-16) */}
+        <main className="flex-1 lg:ml-64 pt-16">
           <div className="px-4 sm:px-6 lg:px-8 pb-8">
             {/* Outlet will be rendered here */}
           </div>
