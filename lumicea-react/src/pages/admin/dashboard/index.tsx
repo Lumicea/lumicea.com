@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Badge } from '../../../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../components/ui/table';
+} from '@/components/ui/table';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -30,8 +30,8 @@ import {
   fetchDashboardStats, 
   fetchRecentOrders, 
   fetchLowStockProducts 
-} from '../../../lib/admin-utils';
-import { formatCurrency } from '../../../lib/utils';
+} from '@/lib/admin-utils';
+import { formatCurrency } from '@/lib/utils';
 
 interface DashboardStats {
   totalSales: number;
