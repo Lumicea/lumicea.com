@@ -93,7 +93,8 @@ body {
  .lumicea-button-primary {
     @apply relative overflow-hidden bg-gradient-to-r from-lumicea-navy to-lumicea-navy-light hover:from-lumicea-navy-light hover:to-lumicea-navy font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
     color: white !important;
-  
+ }
+   
   .lumicea-button-primary::before {
     content: '';
     @apply absolute inset-0 bg-gradient-to-r from-lumicea-gold to-lumicea-gold-light opacity-0 transition-opacity duration-300;
