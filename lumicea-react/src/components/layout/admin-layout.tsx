@@ -106,13 +106,13 @@ export function AdminLayout() {
           navigate('/login');
           return;
         }
-        
+
         const adminStatus = await isUserAdmin();
         if (!adminStatus) {
           navigate('/');
           return;
         }
-        
+
         setUser(user);
         setIsAdmin(adminStatus);
       } catch (error) {
@@ -185,9 +185,9 @@ export function AdminLayout() {
         <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
           {/* Logo and Mobile Menu */}
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="lg:hidden"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
@@ -272,8 +272,8 @@ export function AdminLayout() {
                   </Link>
                 </div>
                 <div className="p-2 border-t">
-                  <button 
-                    onClick={handleSignOut} 
+                  <button
+                    onClick={handleSignOut}
                     className="flex items-center w-full p-2 rounded-md hover:bg-gray-100 text-red-600"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -329,10 +329,10 @@ export function AdminLayout() {
         </aside>
 
         {/* Main Content Area */}
-        {/* Removed pt-16 from here */}
-        <main className="flex-1 lg:ml-64"> 
-          {/* Apply the top padding directly to this inner content wrapper */}
-          <div className="px-4 sm:px-6 lg:px-8 pt-16 pb-8"> 
+        <main className="flex-1 lg:ml-64">
+          {/* Apply the appropriate top and bottom padding here */}
+          {/* We remove pt-16 because the sticky header already provides that offset */}
+          <div className="px-4 sm:px-6 lg:px-8 py-8"> {/* Changed pt-16 to py-8 */}
             <Outlet /> {/* This is where the child routes will render */}
           </div>
         </main>
