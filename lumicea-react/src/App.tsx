@@ -1,13 +1,16 @@
 // lumicea-react/src/App.tsx
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'; // Import useLocation
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // Import ScrollToTop component
 import { ScrollToTop } from '@/components/scroll-to-top';
 
-// Import the Header component
+// Import the Header component (your main site header)
 import { Header } from './components/layout/header';
 
-// Pages
+// Import AdminLayout
+import { AdminLayout } from './components/layout/admin-layout'; // <--- Make sure this is imported!
+
+// Pages (keeping your existing imports, just showing where AdminLayout fits)
 import { HomePage } from "@/pages/home/index.tsx";
 import { NotFoundPage } from "@/pages/not-found/index.tsx";
 import { CartPage } from "@/pages/cart/index.tsx";
@@ -35,11 +38,11 @@ import { PrivacyPage } from "@/pages/legal/privacy.tsx";
 import { CookiesPage } from "@/pages/legal/cookies.tsx";
 import { TermsPage } from "@/pages/legal/terms.tsx";
 import { EarringsPage } from "@/pages/categories/earrings.tsx";
-import { NoseRingsPage } from "@/pages/categories/nose-rings.tsx";
+import { NoseRingsPage } -> "@/pages/categories/nose-rings.tsx";
 import { ProductDetailPage } from "@/pages/products/detail.tsx";
 import { SizeGuidePage } from "@/pages/size-guide.tsx";
 
-// Admin Pages
+// Admin Pages (these will now be children of AdminLayout)
 import { AdminDashboard } from "@/pages/admin/dashboard/index.tsx";
 import { AdminProductsPage } from "@/pages/admin/products/index.tsx";
 import { AdminOrdersPage } from "@/pages/admin/orders/index.tsx";
@@ -50,16 +53,19 @@ import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 // UI Components
 import { CookieConsent } from './components/ui/cookie-consent.tsx';
 
-// Create a wrapper component to access useLocation
 function AppContent() {
-  const location = useLocation(); // Get the current location object
-  const isAdminPage = location.pathname.startsWith('/admin'); // Check if path starts with /admin
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
     <>
-      {/* Conditionally pass the prop to Header based on the route */}
-      <Header showTopBanner={!isAdminPage} />
+      {/* Conditionally render your main site header */}
+      {/* If your AdminLayout header handles all admin headers, you might not want this here. */}
+      {/* This means the main header from ./components/layout/header will not show on admin pages. */}
+      {!isAdminPage && <Header showTopBanner={true} />} 
+      
       <Routes>
+        {/* Public Routes (keep as is) */}
         <Route path="/" element={<HomePage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
@@ -91,13 +97,19 @@ function AppContent() {
         <Route path="/categories/nose-rings" element={<NoseRingsPage />} />
         <Route path="/products/:slug" element={<ProductDetailPage />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/products" element={<AdminProductsPage />} />
-        <Route path="/admin/orders" element={<AdminOrdersPage />} />
-        <Route path="/admin/customers" element={<AdminCustomersPage />} />
-        <Route path="/admin/pages" element={<AdminPagesPage />} />
-        <Route path="/admin/blog" element={<AdminBlogPage />} />
+        {/* --- CRITICAL CHANGE FOR ADMIN ROUTES --- */}
+        {/* All admin routes are now children of the AdminLayout route */}
+        <Route path="/admin" element={<AdminLayout />}> {/* <--- AdminLayout is the parent */}
+          <Route index element={<AdminDashboard />} /> {/* Renders when path is exactly /admin */}
+          <Route path="products" element={<AdminProductsPage />} /> {/* Renders at /admin/products */}
+          <Route path="orders" element={<AdminOrdersPage />} /> {/* Renders at /admin/orders */}
+          <Route path="customers" element={<AdminCustomersPage />} />
+          <Route path="pages" element={<AdminPagesPage />} />
+          <Route path="blog" element={<AdminBlogPage />} />
+          {/* Add more specific admin sub-routes if needed, e.g., product creation */}
+          <Route path="products/new" element={<AdminProductsPage />} /> {/* Example: /admin/products/new */}
+          {/* ... etc. for any other admin sub-routes ... */}
+        </Route>
 
         {/* 404 Route */}
         <Route path="*" element={<NotFoundPage />} />
@@ -111,7 +123,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <AppContent /> {/* Render the new wrapper component */}
+      <AppContent />
     </Router>
   );
 }
