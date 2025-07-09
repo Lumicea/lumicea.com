@@ -24,10 +24,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { 
-  Search, 
-  Globe, 
-  FileText, 
+import {
+  Search,
+  Globe,
+  FileText,
   Link as LinkIcon,
   ExternalLink,
   Save,
@@ -38,8 +38,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-// Corrected import path for Card components
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+// Corrected import path for Card components (now three levels up)
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 
 interface SEOSettings {
   meta_title: string;
