@@ -733,4 +733,4 @@ export default function CategoriesPage() {
   );
 }
 
-export AdminCategoriesPage
+export default AdminCategoriesPage;
