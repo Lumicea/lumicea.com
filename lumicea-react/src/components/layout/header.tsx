@@ -1,7 +1,7 @@
 // lumicea-react/src/components/layout/header.tsx
 'use client';
 
-import { NavCategories } from './nav-categories.tsx';
+// Remove NavCategories import
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,9 @@ import {
   SheetTrigger,
   SheetClose,
 } from '@/components/ui/sheet';
+// Import the new ProductsDropdown component
+import { ProductsDropdown } from './products-dropdown.tsx';
 
-// Define props for the Header component
 interface HeaderProps {
   showTopBanner?: boolean;
 }
@@ -114,9 +115,9 @@ export function Header({ showTopBanner = true }: HeaderProps) {
               </div>
             </Link>
 
-            {/* Use the new dynamic navigation component for desktop */}
+            {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-8">
-                <NavCategories isScrolled={isScrolled} />
+                <ProductsDropdown isScrolled={isScrolled} />
                 <Link
                     to="/collections"
                     className={cn(
@@ -385,8 +386,11 @@ export function Header({ showTopBanner = true }: HeaderProps) {
 
                     {/* Navigation Links */}
                     <div className="px-4 space-y-1 flex-1 overflow-y-auto">
-                      {/* Use the new dynamic navigation component for mobile */}
-                      <NavCategories isMobile={true} />
+                        {/* Use the new dynamic navigation component for mobile */}
+                        <div className="flex flex-col space-y-1">
+                          <p className="px-3 py-1 text-sm font-semibold text-gray-500">Products</p>
+                          <ProductsDropdown isMobile={true} />
+                        </div>
                       <div className="border-t my-2 border-gray-200"></div>
                       <SheetClose asChild>
                         <Link
