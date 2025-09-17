@@ -2,19 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase.ts';
+import { cn } from '@/lib/utils';
 
-export function NavCategories() {
+interface NavCategoriesProps {
+    isScrolled?: boolean;
+    isMobile?: boolean;
+}
+
+export function NavCategories({ isScrolled, isMobile }: NavCategoriesProps) {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchCategories = async () => {
-            // Fetch categories from the Supabase 'categories' table
-            const { data, error } = await supabase
-                .from('categories')
-                .select('name, slug')
-                .order('name');
-            
+            const { data, error } = await supabase.from('categories').select('name, slug').order('name');
             if (error) {
                 console.error('Error fetching categories:', error);
             } else {
@@ -23,19 +24,36 @@ export function NavCategories() {
             setLoading(false);
         };
         fetchCategories();
-    }, []); // Empty dependency array ensures this runs once on mount
+    }, []);
 
     if (loading) {
-        return <div className="text-sm text-gray-400">Loading...</div>; 
+        return (
+            <div className={cn(
+                "flex items-center space-x-6",
+                isMobile ? "flex-col items-start space-y-2 space-x-0" : ""
+            )}>
+                <div className="text-sm text-gray-400">Loading...</div>
+            </div>
+        );
     }
 
     return (
-        <nav className="flex items-center space-x-6">
+        <nav className={cn(
+            "flex items-center space-x-6",
+            isMobile ? "flex-col items-start space-y-2 space-x-0" : ""
+        )}>
             {categories.map((category) => (
                 <Link
                     key={category.slug}
                     to={`/categories/${category.slug}`}
-                    className="text-sm font-medium text-gray-900 hover:text-lumicea-gold transition-colors"
+                    className={cn(
+                        "text-sm font-medium transition-colors duration-300",
+                        isMobile 
+                            ? "w-full p-3 rounded-lg hover:bg-lumicea-navy/5 text-gray-900"
+                            : isScrolled
+                                ? 'text-gray-600 hover:text-lumicea-navy'
+                                : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
+                    )}
                 >
                     {category.name}
                 </Link>
