@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient.ts';
+import { supabase } from '@/lib/supabase.ts';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent } from '@/components/ui/card';
