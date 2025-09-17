@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase.ts';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { ProductCard } from '@/components/products/product-card.tsx'; // Ensure this component exists
+// CORRECT IMPORT: We're using ProductGrid, not ProductCard
+import { ProductGrid } from '@/components/product-grid.tsx';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 export function NoseRingsPage() {
@@ -15,7 +16,7 @@ export function NoseRingsPage() {
             const { data: categoryData, error: categoryError } = await supabase
                 .from('categories')
                 .select('id')
-                .eq('slug', 'nose-rings') // Assuming you have a slug for categories
+                .eq('slug', 'nose-rings')
                 .single();
 
             if (categoryError || !categoryData) {
@@ -28,9 +29,9 @@ export function NoseRingsPage() {
 
             const { data, error } = await supabase
                 .from('products')
-                .select('*') // You might want to select specific columns for better performance
+                .select('*')
                 .eq('category_id', categoryId)
-                .eq('is_active', true); // Only fetch active products
+                .eq('is_active', true);
 
             if (error) {
                 console.error("Error fetching products:", error);
@@ -65,11 +66,8 @@ export function NoseRingsPage() {
                 {loading ? (
                     <div className="text-center text-gray-500">Loading products...</div>
                 ) : products.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {products.map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
+                    // CORRECT RENDERING: Use ProductGrid component and pass the products
+                    <ProductGrid products={products} />
                 ) : (
                     <div className="text-center text-gray-500 py-10">No products found in this category.</div>
                 )}
