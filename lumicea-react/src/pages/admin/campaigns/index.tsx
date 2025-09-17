@@ -75,13 +75,14 @@ interface CustomerSegment {
   customer_count: number;
 }
 
-// Template variables for insertion
+// Updated Template variables for insertion with `store_name` removed
 const TEMPLATE_VARIABLES = [
   { id: 'first_name', label: 'First Name', description: 'Customer\'s first name' },
   { id: 'last_name', label: 'Last Name', description: 'Customer\'s last name' },
   { id: 'email', label: 'Email', description: 'Customer\'s email address' },
   { id: 'order_number', label: 'Order Number', description: 'Most recent order number' },
-  { id: 'total_spent', label: 'Total Spent', description: 'Customer\'s lifetime spend' }
+  { id: 'total_spent', label: 'Total Spent', description: 'Customer\'s lifetime spend' },
+  { id: 'current_date', label: 'Current Date', description: 'The current date' },
 ];
 
 export default function CampaignsPage() {
@@ -249,9 +250,16 @@ export default function CampaignsPage() {
 
   // Insert template variable into content
   const insertTemplateVariable = (variableId: string) => {
+    let variableText = `{{${variableId}}}`;
+
+    // Handle special variables that need dynamic data
+    if (variableId === 'current_date') {
+      variableText = formatDate(new Date().toISOString(), 'PPP'); // Formats a readable date
+    }
+
     setCampaignForm(prev => ({
       ...prev,
-      content: prev.content + ` {{${variableId}}}`
+      content: prev.content + ` ${variableText}`
     }));
   };
 
@@ -275,6 +283,7 @@ export default function CampaignsPage() {
       .replace(/\{\{email\}\}/g, 'john.doe@example.com')
       .replace(/\{\{order_number\}\}/g, 'LUM-12345')
       .replace(/\{\{total_spent\}\}/g, '£250.00')
+      .replace(/\{\{current_date\}\}/g, formatDate(new Date().toISOString(), 'PPP'))
       .replace(/\{\{[^}]+\}\}/g, '[Variable]');
 
     const htmlContent = `
@@ -512,6 +521,7 @@ export default function CampaignsPage() {
       .replace(/\{\{email\}\}/g, 'john.doe@example.com')
       .replace(/\{\{order_number\}\}/g, 'LUM-12345')
       .replace(/\{\{total_spent\}\}/g, '£250.00')
+      .replace(/\{\{current_date\}\}/g, formatDate(new Date().toISOString(), 'PPP'))
       .replace(/\{\{[^}]+\}\}/g, '[Variable]'); // Replace any other template variables
 
     return { __html: safeContent };
@@ -612,7 +622,8 @@ export default function CampaignsPage() {
                       />
                     </Suspense>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  {/* Spacing below the editor has been increased with mt-4 */}
+                  <div className="flex flex-wrap gap-2 mt-4">
                     {TEMPLATE_VARIABLES.map(variable => (
                       <Badge
                         key={variable.id}
