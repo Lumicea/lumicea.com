@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
@@ -67,48 +67,63 @@ export function ProductDetailPage() {
       <main>
         <div className="lumicea-container py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Product Images - Now uses dynamic data */}
+            {/* Product Images - Updated to use the 'images' column */}
             <div>
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
                 <img
-                  src={product.main_image_url || 'https://via.placeholder.com/800'} // Fallback for no image
+                  src={product.images?.[0] || 'https://via.placeholder.com/800'}
                   alt={product.name || 'Product Image'}
                   className="w-full h-full object-cover"
                 />
               </div>
-              {/* This section needs to be dynamic to show multiple images */}
+              {/* This section now maps through the 'images' array for thumbnails */}
+              {product.images?.length > 1 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {product.images.map((image, index) => (
+                    <div key={index} className="aspect-square bg-gray-100 rounded-md overflow-hidden">
+                      <img
+                        src={image}
+                        alt={`${product.name} view ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Product Details - Now uses dynamic data */}
+            {/* Product Details - Now uses dynamic data from your columns */}
             <div className="space-y-6">
               <div>
-                <Badge variant="secondary" className="mb-2">
-                  {/* This needs a separate query to get the category name */}
-                  Category
-                </Badge>
+                {/* Category data needs to be fetched separately if not included in this query */}
+                {product.category_id && <Badge variant="secondary" className="mb-2">Category</Badge>}
+                
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
                   {product.name}
                 </h1>
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="flex items-center">
-                    {/* Dynamic star ratings based on product.rating */}
-                    <span className="ml-2 text-sm text-gray-600">
-                      {product.review_count ? `${product.rating} (${product.review_count} reviews)` : 'No reviews yet'}
-                    </span>
-                  </div>
-                </div>
+                
                 <p className="text-gray-700 leading-relaxed">
-                  {product.description}
+                  {product.short_description || product.description}
                 </p>
               </div>
 
               <div className="text-3xl font-bold text-gray-900">
-                £{product.price?.toFixed(2) || '0.00'}
+                £{product.base_price?.toFixed(2) || '0.00'}
               </div>
 
-              {/* Variant Selects - These will need to be dynamic */}
+              {/* Variant Selects */}
               <div className="space-y-4">
-                {/* Dynamically render these based on product variants */}
+                {/* This will require more complex logic to dynamically render based on customization_options */}
+                {/* For example:
+                {product.customization_options?.materials && (
+                  <div>
+                    <Label className="text-sm font-medium">Material</Label>
+                    <select className="...">
+                      {product.customization_options.materials.map(mat => <option key={mat}>{mat}</option>)}
+                    </select>
+                  </div>
+                )}
+                */}
               </div>
 
               <div className="flex space-x-3">
@@ -124,7 +139,9 @@ export function ProductDetailPage() {
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Product Features</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  {/* This section needs to be dynamic */}
+                  <li>• SKU: {product.sku}</li>
+                  {product.materials && <li>• Materials: {product.materials}</li>}
+                  {product.care_instructions && <li>• Care Instructions: {product.care_instructions}</li>}
                 </ul>
               </div>
             </div>
