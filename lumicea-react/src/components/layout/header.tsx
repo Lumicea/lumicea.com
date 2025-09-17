@@ -1,3 +1,4 @@
+// lumicea-react/src/components/layout/header.tsx
 'use client';
 
 import { NavCategories } from './nav-categories.tsx';
@@ -31,10 +32,9 @@ import {
 
 // Define props for the Header component
 interface HeaderProps {
-  showTopBanner?: boolean; // New prop to control the top banner visibility
+  showTopBanner?: boolean;
 }
 
-// Update the Header function signature to accept the new prop
 export function Header({ showTopBanner = true }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const { itemCount } = useCart();
@@ -57,7 +57,6 @@ export function Header({ showTopBanner = true }: HeaderProps) {
 
   return (
     <>
-      {/* Top Banner Wrapper - Only show when not scrolled AND showTopBanner is true */}
       <div
         className={cn(
           'fixed top-0 z-50 w-full transition-all duration-500',
@@ -66,7 +65,6 @@ export function Header({ showTopBanner = true }: HeaderProps) {
             : 'bg-transparent'
         )}
       >
-        {/* Conditional rendering for the free shipping banner */}
         {showTopBanner && (
           <div
             className={cn(
@@ -84,10 +82,8 @@ export function Header({ showTopBanner = true }: HeaderProps) {
           </div>
         )}
 
-        {/* Main Header */}
         <header>
           <div className="lumicea-container flex items-center justify-between h-20">
-            {/* Logo */}
             <Link
               to="/"
               className="flex items-center space-x-2 md:space-x-3 group z-10"
@@ -118,75 +114,54 @@ export function Header({ showTopBanner = true }: HeaderProps) {
               </div>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              <Link
-                to="/categories/nose-rings"
-                className={cn(
-                  'text-sm font-medium transition-colors duration-300',
-                  isScrolled
-                    ? 'text-gray-600 hover:text-lumicea-navy'
-                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
-                )}
-              >
-                Nose Rings
-              </Link>
-              <Link
-                to="/categories/earrings"
-                className={cn(
-                  'text-sm font-medium transition-colors duration-300',
-                  isScrolled
-                    ? 'text-gray-600 hover:text-lumicea-navy'
-                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
-                )}
-              >
-                Earrings
-              </Link>
-              <Link
-                to="/collections"
-                className={cn(
-                  'text-sm font-medium transition-colors duration-300',
-                  isScrolled
-                    ? 'text-gray-600 hover:text-lumicea-navy'
-                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
-                )}
-              >
-                Collections
-              </Link>
-              <Link
-                to="/custom"
-                className={cn(
-                  'text-sm font-medium transition-colors duration-300',
-                  isScrolled
-                    ? 'text-gray-600 hover:text-lumicea-navy'
-                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
-                )}
-              >
-                Custom Orders
-              </Link>
-              <Link
-                to="/size-guide"
-                className={cn(
-                  'text-sm font-medium transition-colors duration-300',
-                  isScrolled
-                    ? 'text-gray-600 hover:text-lumicea-navy'
-                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
-                )}
-              >
-                Size Guide
-              </Link>
-              <Link
-                to="/care"
-                className={cn(
-                  'text-sm font-medium transition-colors duration-300',
-                  isScrolled
-                    ? 'text-gray-600 hover:text-lumicea-navy'
-                    : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
-                )}
-              >
-                Care Instructions
-              </Link>
-            </nav>
+            {/* Use the new dynamic navigation component for desktop */}
+            <div className="hidden lg:flex items-center space-x-8">
+                <NavCategories isScrolled={isScrolled} />
+                <Link
+                    to="/collections"
+                    className={cn(
+                        'text-sm font-medium transition-colors duration-300',
+                        isScrolled
+                            ? 'text-gray-600 hover:text-lumicea-navy'
+                            : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
+                    )}
+                >
+                    Collections
+                </Link>
+                <Link
+                    to="/custom"
+                    className={cn(
+                        'text-sm font-medium transition-colors duration-300',
+                        isScrolled
+                            ? 'text-gray-600 hover:text-lumicea-navy'
+                            : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
+                    )}
+                >
+                    Custom Orders
+                </Link>
+                <Link
+                    to="/size-guide"
+                    className={cn(
+                        'text-sm font-medium transition-colors duration-300',
+                        isScrolled
+                            ? 'text-gray-600 hover:text-lumicea-navy'
+                            : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
+                    )}
+                >
+                    Size Guide
+                </Link>
+                <Link
+                    to="/care"
+                    className={cn(
+                        'text-sm font-medium transition-colors duration-300',
+                        isScrolled
+                            ? 'text-gray-600 hover:text-lumicea-navy'
+                            : 'text-white/90 hover:text-lumicea-gold drop-shadow-sm'
+                    )}
+                >
+                    Care Instructions
+                </Link>
+            </div>
 
             {/* Right Actions */}
             <div className="flex items-center space-x-4">
@@ -410,22 +385,9 @@ export function Header({ showTopBanner = true }: HeaderProps) {
 
                     {/* Navigation Links */}
                     <div className="px-4 space-y-1 flex-1 overflow-y-auto">
-                      <SheetClose asChild>
-                        <Link
-                          to="/categories/nose-rings"
-                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
-                        >
-                          <span className="font-medium">Nose Rings</span>
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link
-                          to="/categories/earrings"
-                          className="flex items-center p-3 rounded-lg hover:bg-lumicea-navy/5"
-                        >
-                          <span className="font-medium">Earrings</span>
-                        </Link>
-                      </SheetClose>
+                      {/* Use the new dynamic navigation component for mobile */}
+                      <NavCategories isMobile={true} />
+                      <div className="border-t my-2 border-gray-200"></div>
                       <SheetClose asChild>
                         <Link
                           to="/collections"
@@ -442,9 +404,7 @@ export function Header({ showTopBanner = true }: HeaderProps) {
                           <span className="font-medium">Custom Orders</span>
                         </Link>
                       </SheetClose>
-
                       <div className="border-t my-2 border-gray-200"></div>
-
                       <SheetClose asChild>
                         <Link
                           to="/about"
