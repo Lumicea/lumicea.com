@@ -622,7 +622,6 @@ export default function CampaignsPage() {
                       />
                     </Suspense>
                   </div>
-                  {/* Spacing below the editor has been increased with mt-4 */}
                   <div className="flex flex-wrap gap-2 mt-4">
                     {TEMPLATE_VARIABLES.map(variable => (
                       <Badge
@@ -637,7 +636,7 @@ export default function CampaignsPage() {
                     ))}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Use template variables like {'{{'} variable_name {'}}'}  to personalize your email.
+                    Use template variables like {'{{'} variable_name {'}}'} to personalize your email.
                   </p>
                 </div>
 
