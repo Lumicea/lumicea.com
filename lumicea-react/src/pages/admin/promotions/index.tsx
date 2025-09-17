@@ -352,7 +352,7 @@ export default function AdminPromotionsPage() {
                 Create Promotion
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="bg-white max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
                   {editingPromotion ? 'Edit Promotion' : 'Create New Promotion'}
