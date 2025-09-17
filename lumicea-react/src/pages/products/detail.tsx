@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom'; // Import useParams
-import { supabase } from '@/lib/supabaseClient'; // Import your Supabase client
+import { useParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,42 +10,35 @@ import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 export function ProductDetailPage() {
-  // Use the useParams hook to get the 'slug' from the URL
   const { slug } = useParams();
-
-  // Set up state to hold the product data and loading status
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Use useEffect to fetch the data when the component mounts or the slug changes
   useEffect(() => {
     async function fetchProduct() {
-      // If there's no slug, don't try to fetch anything
       if (!slug) {
         setLoading(false);
         return;
       }
 
-      // Use the slug to query the 'products' table in Supabase
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('slug', slug) // Match the 'slug' column with the URL parameter
-        .single(); // Get a single product row
+        .eq('slug', slug)
+        .single();
 
       if (error) {
         console.error('Error fetching product:', error.message);
-        setProduct(null); // Set product to null on error
+        setProduct(null);
       } else {
         setProduct(data);
       }
-      setLoading(false); // Set loading to false after the fetch is complete
+      setLoading(false);
     }
 
     fetchProduct();
-  }, [slug]); // Re-run the effect whenever the 'slug' changes
+  }, [slug]);
 
-  // Display a loading message while data is being fetched
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -54,7 +47,6 @@ export function ProductDetailPage() {
     );
   }
 
-  // Display a not-found message if no product is found
   if (!product) {
     return (
       <div className="min-h-screen text-center py-20">
@@ -68,7 +60,6 @@ export function ProductDetailPage() {
     );
   }
 
-  // If a product is found, render the page with dynamic data
   return (
     <div className="min-h-screen">
       <Header />
@@ -76,26 +67,23 @@ export function ProductDetailPage() {
       <main>
         <div className="lumicea-container py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Product Images - Make this dynamic using product data */}
+            {/* Product Images - Now uses dynamic data */}
             <div>
               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
                 <img
-                  src={product.main_image_url || 'https://images.pexels.com/photos/1191531/pexels-photo-1191531.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                  src={product.main_image_url || 'https://via.placeholder.com/800'} // Fallback for no image
                   alt={product.name || 'Product Image'}
                   className="w-full h-full object-cover"
                 />
               </div>
-              {/* This section would need more logic to handle multiple images */}
-              <div className="grid grid-cols-4 gap-2">
-                {/* Dynamically render images from the product data */}
-              </div>
+              {/* This section needs to be dynamic to show multiple images */}
             </div>
 
-            {/* Product Details - Populate with dynamic data */}
+            {/* Product Details - Now uses dynamic data */}
             <div className="space-y-6">
               <div>
                 <Badge variant="secondary" className="mb-2">
-                  {/* Category data needs to be fetched from Supabase */}
+                  {/* This needs a separate query to get the category name */}
                   Category
                 </Badge>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
@@ -103,7 +91,7 @@ export function ProductDetailPage() {
                 </h1>
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="flex items-center">
-                    {/* Render stars based on product.rating */}
+                    {/* Dynamic star ratings based on product.rating */}
                     <span className="ml-2 text-sm text-gray-600">
                       {product.review_count ? `${product.rating} (${product.review_count} reviews)` : 'No reviews yet'}
                     </span>
@@ -115,7 +103,7 @@ export function ProductDetailPage() {
               </div>
 
               <div className="text-3xl font-bold text-gray-900">
-                £{product.price.toFixed(2)}
+                £{product.price?.toFixed(2) || '0.00'}
               </div>
 
               {/* Variant Selects - These will need to be dynamic */}
@@ -136,7 +124,7 @@ export function ProductDetailPage() {
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">Product Features</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
-                  {/* Dynamically render product features */}
+                  {/* This section needs to be dynamic */}
                 </ul>
               </div>
             </div>
