@@ -65,6 +65,7 @@ interface EmailCampaign {
   clicked_count: number;
   status: string;
   created_at: string;
+  created_by: string; // Added created_by field
 }
 
 interface CustomerSegment {
@@ -173,6 +174,11 @@ export default function CampaignsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!currentUser) {
+      alert('You must be logged in to save a campaign.');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -183,6 +189,7 @@ export default function CampaignsPage() {
       };
 
       if (editingCampaign) {
+        // Exclude created_by on update
         const { error } = await supabase
           .from('email_campaigns')
           .update(formData)
@@ -190,9 +197,10 @@ export default function CampaignsPage() {
 
         if (error) throw error;
       } else {
+        // Add created_by on insert
         const { error } = await supabase
           .from('email_campaigns')
-          .insert([formData]);
+          .insert([{ ...formData, created_by: currentUser.id }]);
 
         if (error) throw error;
       }
@@ -241,11 +249,9 @@ export default function CampaignsPage() {
 
   // Insert template variable into content
   const insertTemplateVariable = (variableId: string) => {
-    const currentContent = campaignForm.content;
-    const variableText = `{{${variableId}}}`;
     setCampaignForm(prev => ({
       ...prev,
-      content: currentContent + ' ' + variableText
+      content: prev.content + ` {{${variableId}}}`
     }));
   };
 
