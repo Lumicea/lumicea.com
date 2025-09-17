@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase.ts';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-// CORRECT IMPORT: We're using ProductGrid, not ProductCard
-import { ProductGrid } from '@/components/product-grid.tsx';
+import { ProductGrid } from '@/components/product/product-grid.tsx';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 
 export function NoseRingsPage() {
