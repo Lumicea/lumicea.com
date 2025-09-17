@@ -120,7 +120,8 @@ function AppContent() {
           <Route path="pages" element={<AdminPagesPage />} />
           <Route path="blog" element={<AdminBlogPage />} />
           {/* Add more specific admin sub-routes if needed, e.g., product creation */}
-          <Route path="products/new" element={<AdminProductsPage />} /> {/* Example: /admin/products/new */}
+          <Route path="products/new" element={<AdminProductsPage />}  {/* Example: /admin/products/new */}
+          <Route path="/admin/products/:id" element={<AdminProductDetailPage />} />
           {/* ... etc. for any other admin sub-routes ... */}
 
           {/* NEW ADMIN ROUTES */}
