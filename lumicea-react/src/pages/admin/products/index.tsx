@@ -1,388 +1,472 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit, 
-  Trash2,
-  Package,
-  AlertTriangle,
-  TrendingUp,
-  DollarSign
-} from 'lucide-react';
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+  Switch,
+  Badge
+} from '@/components/ui'; // Assuming a combined export from a ui index.ts
+import { Plus, Trash2, Save, Loader2, ArrowLeft, Image as ImageIcon, Tags, Copy } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { fetchProducts } from '@/lib/admin-utils';
-import { formatCurrency } from '@/lib/utils';
-import { ProductEditor } from '@/components/admin/product-editor';
+import { slugify } from '@/lib/utils';
+import { v4 as uuidv4 } from 'uuid';
+import { getProductData } from '@/lib/admin-utils'; // We will create this utility function next
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  sku_prefix: string;
-  base_price: number;
-  category: {
-    name: string;
-  };
-  is_active: boolean;
-  is_featured: boolean;
-  created_at: string;
-  variants: {
-    id: string;
-    sku: string;
-    stock_quantity: number;
-    low_stock_threshold: number;
-  }[];
+// Define interfaces for data types
+interface ProductFormData {
+  name: string;
+  slug: string;
+  description: string;
+  short_description: string;
+  sku_prefix: string;
+  is_active: boolean;
+  is_featured: boolean;
+  is_made_to_order: boolean;
+  base_price: string;
+  images: { url: string; is_master: boolean; sort_order: number; id?: string; }[];
+  product_tags: { tag_name: string }[];
+  collections: { id: string, collection_name: string }[];
 }
 
-export function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [editingProduct, setEditingProduct] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-
-  useEffect(() => {
-    loadProducts();
-  }, []);
-
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-      const productsData = await fetchProducts();
-      setProducts(productsData);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      // Remove from local state
-      setProducts(products.filter(p => p.id !== id));
-      setDeleteDialogOpen(false);
-      setProductToDelete(null);
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      alert('Error deleting product. Please try again.');
-    }
-  };
-
-  const confirmDelete = (product: Product) => {
-    setProductToDelete(product);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleEdit = (id: string) => {
-    setEditingProduct(id);
-  };
-
-  const handleCreate = () => {
-    setIsCreating(true);
-  };
-
-  const handleBack = () => {
-    setEditingProduct(null);
-    setIsCreating(false);
-    loadProducts();
-  };
-
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku_prefix.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && product.is_active) ||
-                         (statusFilter === 'inactive' && !product.is_active) ||
-                         (statusFilter === 'featured' && product.is_featured);
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const getTotalStock = (variants: any[]) => {
-    return variants.reduce((total, variant) => total + variant.stock_quantity, 0);
-  };
-
-  const hasLowStock = (variants: any[]) => {
-    return variants.some(variant => variant.stock_quantity <= variant.low_stock_threshold);
-  };
-
-  const getStockStatus = (variants: any[]) => {
-    const totalStock = getTotalStock(variants);
-    const lowStock = hasLowStock(variants);
-    
-    if (totalStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
-    if (lowStock) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-    return { label: 'In Stock', color: 'bg-green-100 text-green-800' };
-  };
-
-  // If editing or creating, show the editor
-  if (editingProduct || isCreating) {
-    return (
-      <ProductEditor 
-        productId={editingProduct || undefined} 
-        onBack={handleBack}
-      />
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lumicea-navy"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-600">Manage your product catalog</p>
-        </div>
-        <Button onClick={handleCreate} className="lumicea-button-primary">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Package className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Products</p>
-                <p className="text-2xl font-bold text-gray-900">{products.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Products</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {products.filter(p => p.is_active).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Low Stock</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {products.filter(p => hasLowStock(p.variants)).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg. Price</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency((products.reduce((sum, p) => sum + p.base_price, 0) / products.length) || 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-[180px] rounded-md border border-input bg-background px-3 py-2"
-            >
-              <option value="all">All Products</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="featured">Featured</option>
-            </select>
-
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              More Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Products Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Product List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredProducts.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>SKU Prefix</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProducts.map((product) => {
-                    const stockStatus = getStockStatus(product.variants);
-                    return (
-                      <TableRow key={product.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-gray-500">{product.slug}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono">{product.sku_prefix}</TableCell>
-                        <TableCell>{product.category?.name || 'Uncategorized'}</TableCell>
-                        <TableCell>{formatCurrency(product.base_price)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <span>{getTotalStock(product.variants)}</span>
-                            <Badge className={stockStatus.color}>
-                              {stockStatus.label}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-1">
-                            {product.is_active ? (
-                              <Badge className="bg-green-100 text-green-800">Active</Badge>
-                            ) : (
-                              <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
-                            )}
-                            {product.is_featured && (
-                              <Badge className="bg-blue-100 text-blue-800">Featured</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-1">
-                            <Button as={Link} to={`/products/${product.slug}`} size="sm" variant="outline" target="_blank">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleEdit(product.id)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => confirmDelete(product)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No products found</h3>
-              <p className="text-gray-500 mb-4">
-                {searchTerm ? 'Try adjusting your search or filters' : 'Get started by adding your first product'}
-              </p>
-              {!searchTerm && (
-                <Button onClick={handleCreate} className="lumicea-button-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delete Confirmation Dialog */}
-      {deleteDialogOpen && productToDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">Delete Product</h3>
-            <p className="mb-6">
-              Are you sure you want to delete "{productToDelete.name}"? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={() => handleDeleteProduct(productToDelete.id)}>
-                Delete Product
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+interface ProductVariantData {
+  id?: string;
+  sku: string;
+  stock_quantity: number;
+  price: string;
+  compare_at_price: string;
+  options: { variant_type: string, option_name: string, is_sold_out: boolean }[];
+  images: { url: string; sort_order: number; }[];
+  prices: { region: string, price: string }[];
 }
 
-export default AdminProductsPage;
+interface OptionData {
+  id: string;
+  option_name: string;
+  is_sold_out: boolean;
+}
+
+interface VariantTypeData {
+  id: string;
+  type_name: string;
+}
+
+interface TagData {
+  id: string;
+  tag_name: string;
+}
+
+interface CollectionData {
+  id: string;
+  collection_name: string;
+}
+
+// Main ProductEditor Component
+export function ProductEditor({ productId, onBack }: { productId?: string; onBack: () => void; }) {
+  const isEditing = !!productId;
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<ProductFormData>({
+    name: '',
+    slug: '',
+    description: '',
+    short_description: '',
+    sku_prefix: '',
+    is_active: false,
+    is_featured: false,
+    is_made_to_order: false,
+    base_price: '0.00',
+    images: [],
+    product_tags: [],
+    collections: [],
+  });
+
+  const [variants, setVariants] = useState<ProductVariantData[]>([]);
+  const [variantTypes, setVariantTypes] = useState<VariantTypeData[]>([]);
+  const [variantOptions, setVariantOptions] = useState<Record<string, OptionData[]>>({});
+  const [allTags, setAllTags] = useState<TagData[]>([]);
+  const [allCollections, setAllCollections] = useState<CollectionData[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch all base data for dropdowns/autocompletes
+        const { data: types } = await supabase.from('variant_types').select('*');
+        const { data: tags } = await supabase.from('product_tag_names').select('*');
+        const { data: collections } = await supabase.from('product_collections').select('*');
+        setVariantTypes(types || []);
+        setAllTags(tags || []);
+        setAllCollections(collections || []);
+
+        // Fetch variant options and group them by type
+        const { data: options } = await supabase.from('variant_options').select('*');
+        const groupedOptions = options?.reduce((acc, option) => {
+          const typeId = option.variant_type_id;
+          if (!acc[typeId]) acc[typeId] = [];
+          acc[typeId].push(option);
+          return acc;
+        }, {} as Record<string, OptionData[]>) || {};
+        setVariantOptions(groupedOptions);
+
+        // If editing, load existing product data
+        if (isEditing) {
+          const productData = await getProductData(productId as string);
+          if (productData) {
+            setForm({
+              name: productData.name,
+              slug: productData.slug,
+              description: productData.description || '',
+              short_description: productData.short_description || '',
+              sku_prefix: productData.sku_prefix || '',
+              is_active: productData.is_active,
+              is_featured: productData.is_featured,
+              is_made_to_order: productData.is_made_to_order,
+              base_price: productData.base_price,
+              images: productData.images || [],
+              product_tags: productData.product_tags?.map(t => t.tag_name) || [], // Assuming tag names are what's needed
+              collections: productData.collections || [],
+            });
+            setVariants(productData.variants || []);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load product data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [productId, isEditing]);
+
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [id]: value,
+      slug: id === 'name' ? slugify(value) : prev.slug,
+    }));
+  };
+
+  const handleToggleChange = (id: keyof ProductFormData, checked: boolean) => {
+    setForm(prev => ({
+      ...prev,
+      [id]: checked,
+    }));
+  };
+
+  const handleVariantChange = (
+    index: number,
+    field: keyof ProductVariantData,
+    value: any
+  ) => {
+    const newVariants = [...variants];
+    (newVariants[index] as any)[field] = value;
+    setVariants(newVariants);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, variantId?: string) => {
+    // Implementation will use an Edge Function to securely upload to Cloudinary.
+    // For now, we'll just add a placeholder.
+    // You would replace this with actual Cloudinary upload logic.
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Simulate Cloudinary upload response
+    const imageUrl = URL.createObjectURL(file);
+    const newImage = { url: imageUrl, is_master: !variantId, sort_order: form.images.length };
+
+    setForm(prev => ({
+      ...prev,
+      images: [...prev.images, newImage]
+    }));
+  };
+
+  const handleDeleteImage = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      // This is a simplified process. In reality, you'd use a single function
+      // on a backend to handle all inserts and updates in a transaction.
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .upsert({ ...form, id: productId })
+        .select()
+        .single();
+
+      if (productError) throw productError;
+
+      // Handle variants, prices, tags, and collections
+      // This part requires a lot of complex logic to check for existing records, update, and insert
+      // We will focus on the UI and a simple upsert for now to get it working.
+      // A more robust solution would involve a custom RPC or Edge Function.
+
+      // Save tags
+      const tagNames = form.product_tags.map(t => ({ tag_name: t }));
+      await supabase.from('product_tag_names').upsert(tagNames, { onConflict: 'tag_name' });
+      const { data: existingTags } = await supabase.from('product_tag_names').select('id, tag_name').in('tag_name', tagNames.map(t => t.tag_name));
+      const tagsToInsert = existingTags?.map(tag => ({ product_id: productData.id, tag_id: tag.id }));
+      await supabase.from('product_tags').upsert(tagsToInsert || []);
+
+      alert('Product saved successfully!');
+      onBack();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert('Failed to save product. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addVariant = () => {
+    setVariants(prev => [
+      ...prev,
+      {
+        sku: '',
+        stock_quantity: 0,
+        price: '0.00',
+        compare_at_price: '0.00',
+        options: [],
+        images: [],
+        prices: []
+      }
+    ]);
+  };
+
+  const removeVariant = (index: number) => {
+    setVariants(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addTag = (tagName: string) => {
+    if (tagName && !form.product_tags.some(t => t.tag_name === tagName)) {
+      setForm(prev => ({
+        ...prev,
+        product_tags: [...prev.product_tags, { tag_name: tagName }]
+      }));
+    }
+  };
+
+  const removeTag = (tagName: string) => {
+    setForm(prev => ({
+      ...prev,
+      product_tags: prev.product_tags.filter(t => t.tag_name !== tagName)
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lumicea-navy"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button onClick={onBack} variant="ghost" size="icon">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isEditing ? `Edit Product: ${form.name}` : 'Create New Product'}
+          </h1>
+        </div>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          Save Product
+        </Button>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-6">
+        {/* Product Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input id="name" value={form.name} onChange={handleInputChange} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sku_prefix">SKU Prefix</Label>
+                <Input id="sku_prefix" value={form.sku_prefix} onChange={handleInputChange} placeholder="E.g. GOLD-HM-12" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input id="slug" value={form.slug} onChange={handleInputChange} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={form.description} onChange={handleInputChange} rows={6} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="short_description">Short Description</Label>
+              <Textarea id="short_description" value={form.short_description} onChange={handleInputChange} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pricing and Stock */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pricing & Stock</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="base_price">Base Price</Label>
+                <Input id="base_price" type="number" step="0.01" value={form.base_price} onChange={handleInputChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="is_made_to_order">Stock Type</Label>
+                <div className="flex items-center space-x-2 p-2 rounded-md border border-input">
+                  <Switch
+                    id="is_made_to_order"
+                    checked={form.is_made_to_order}
+                    onCheckedChange={(checked) => handleToggleChange('is_made_to_order', checked)}
+                  />
+                  <Label htmlFor="is_made_to_order">
+                    {form.is_made_to_order ? 'Made to Order' : 'Fixed Quantity'}
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Variants */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Variants</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {variants.map((variant, index) => (
+              <div key={index} className="border p-4 rounded-md space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium text-lg">Variant {index + 1}</h3>
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeVariant(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>SKU</Label>
+                    <Input value={variant.sku} onChange={(e) => handleVariantChange(index, 'sku', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Price</Label>
+                    <Input type="number" step="0.01" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button type="button" variant="outline" onClick={addVariant}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Variant
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Images */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Images</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {form.images.map((image, index) => (
+                <div key={index} className="relative group aspect-square rounded-md overflow-hidden">
+                  <img src={image.url} alt={`Product image ${index + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="destructive" size="icon" onClick={() => handleDeleteImage(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Label htmlFor="image-upload" className="cursor-pointer aspect-square rounded-md border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors">
+                <ImageIcon className="h-8 w-8" />
+                <Input id="image-upload" type="file" onChange={handleImageUpload} className="sr-only" />
+              </Label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tags and Categories */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tags & Collections</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.product_tags.map((tag, index) => (
+                  <Badge key={index} className="flex items-center space-x-1">
+                    <span>{tag.tag_name}</span>
+                    <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => removeTag(tag.tag_name)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+              <Select onValueChange={(value) => addTag(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select or type a tag..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTags.map(tag => (
+                    <SelectItem key={tag.id} value={tag.tag_name}>
+                      {tag.tag_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Status Toggles */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="is_active">Active (Live on site)</Label>
+              <Switch id="is_active" checked={form.is_active} onCheckedChange={(checked) => handleToggleChange('is_active', checked)} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="is_featured">Featured (Promoted on homepage)</Label>
+              <Switch id="is_featured" checked={form.is_featured} onCheckedChange={(checked) => handleToggleChange('is_featured', checked)} />
+            </div>
+          </CardContent>
+        </Card>
+      </form>
+    </div>
+  );
+}
