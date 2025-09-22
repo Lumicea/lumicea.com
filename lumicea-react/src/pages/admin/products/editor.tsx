@@ -241,62 +241,62 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6">
+    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-gray-50">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack} disabled={loading}>
           <ChevronLeft className="h-4 w-4 mr-2" />
-          Back to List
+          <span className="text-[#0a0a4a]">Back to List</span>
         </Button>
-        <h1 className="text-3xl font-bold">{isNewProduct ? 'New Product' : `Edit Product: ${product.name}`}</h1>
+        <h1 className="text-3xl font-bold text-[#0a0a4a]">{isNewProduct ? 'New Product' : `Edit Product: ${product.name}`}</h1>
       </div>
 
-      <Card>
+      <Card className="rounded-xl shadow-lg">
         <CardHeader>
-          <CardTitle>Product Details</CardTitle>
+          <CardTitle className="text-[#0a0a4a]">Product Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Product Name</Label>
-            <Input id="name" value={product.name} onChange={handleChange} required />
+            <Label htmlFor="name" className="text-gray-700">Product Name</Label>
+            <Input id="name" value={product.name} onChange={handleChange} required className="border-gray-300 focus:border-[#ddb866]" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sku_prefix">SKU Prefix</Label>
-            <Input id="sku_prefix" value={product.sku_prefix} onChange={handleChange} required />
+            <Label htmlFor="sku_prefix" className="text-gray-700">SKU Prefix</Label>
+            <Input id="sku_prefix" value={product.sku_prefix} onChange={handleChange} required className="border-gray-300 focus:border-[#ddb866]" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="base_price">Base Price</Label>
-            <Input id="base_price" type="number" value={product.base_price} onChange={handlePriceChange} required min="0" step="0.01" />
+            <Label htmlFor="base_price" className="text-gray-700">Base Price</Label>
+            <Input id="base_price" type="number" value={product.base_price} onChange={handlePriceChange} required min="0" step="0.01" className="border-gray-300 focus:border-[#ddb866]" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Product Description</Label>
-            <Textarea id="description" value={product.description} onChange={handleChange} />
+            <Label htmlFor="description" className="text-gray-700">Product Description</Label>
+            <Textarea id="description" value={product.description} onChange={handleChange} className="border-gray-300 focus:border-[#ddb866]" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="features">Product Features</Label>
-            <Textarea id="features" value={product.features} onChange={handleChange} />
+            <Label htmlFor="features" className="text-gray-700">Product Features</Label>
+            <Textarea id="features" value={product.features} onChange={handleChange} className="border-gray-300 focus:border-[#ddb866]" />
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox id="is_active" checked={product.is_active} onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_active: !!checked }))} />
-            <Label htmlFor="is_active">Active</Label>
+            <Label htmlFor="is_active" className="text-gray-700">Active</Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox id="is_featured" checked={product.is_featured} onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_featured: !!checked }))} />
-            <Label htmlFor="is_featured">Featured</Label>
+            <Label htmlFor="is_featured" className="text-gray-700">Featured</Label>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl shadow-lg">
         <CardHeader>
-          <CardTitle>Product Variants</CardTitle>
+          <CardTitle className="text-[#0a0a4a]">Product Variants</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">Add master variant sections like "Hoop Material" or "Gauge".</p>
           {product.variants.map((variant, variantIndex) => (
-            <div key={variant.id} className="space-y-2 border-l-2 pl-4">
+            <div key={variant.id} className="space-y-2 border-l-2 pl-4 border-[#ddb866]">
               <div className="flex items-center space-x-2">
-                <Label>Variant Name</Label>
-                <Input value={variant.name} onChange={(e) => handleVariantChange(variant.id, e.target.value)} placeholder="e.g., Hoop Material" />
+                <Label className="text-gray-700">Variant Name</Label>
+                <Input value={variant.name} onChange={(e) => handleVariantChange(variant.id, e.target.value)} placeholder="e.g., Hoop Material" className="border-gray-300 focus:border-[#ddb866]" />
               </div>
               <div className="space-y-2 ml-4 mt-2">
                 <p className="text-sm text-gray-500">Add options for this variant.</p>
@@ -306,6 +306,7 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
                       value={option.name}
                       onChange={(e) => handleVariantOptionChange(variant.id, option.id, 'name', e.target.value)}
                       placeholder="Option Name (e.g., Gold)"
+                      className="border-gray-300 focus:border-[#ddb866]"
                     />
                     <Input
                       type="number"
@@ -313,26 +314,27 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
                       onChange={(e) => handleVariantOptionChange(variant.id, option.id, 'price_change', parseFloat(e.target.value) || 0)}
                       placeholder="Price Change"
                       step="0.01"
+                      className="border-gray-300 focus:border-[#ddb866]"
                     />
                   </div>
                 ))}
-                <Button type="button" variant="outline" onClick={() => addVariantOption(variant.id)}>
+                <Button type="button" variant="outline" onClick={() => addVariantOption(variant.id)} className="border-[#ddb866] text-[#ddb866] hover:bg-[#ddb866] hover:text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Option
                 </Button>
               </div>
             </div>
           ))}
-          <Button type="button" onClick={addVariant}>
+          <Button type="button" onClick={addVariant} className="bg-[#ddb866] text-white hover:bg-[#ddb866]/80 shadow-md">
             <Plus className="h-4 w-4 mr-2" />
             Add Variant Section
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl shadow-lg">
         <CardHeader>
-          <CardTitle>Product Images</CardTitle>
+          <CardTitle className="text-[#0a0a4a]">Product Images</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">
@@ -348,6 +350,7 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
                   setProduct(prev => ({ ...prev, images: newImages }));
                 }}
                 placeholder="Image URL"
+                className="border-gray-300 focus:border-[#ddb866]"
               />
             </div>
           ))}
@@ -356,16 +359,16 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
               ...prev,
               images: [...prev.images, { id: uuidv4(), url: '', altText: '', isMain: false }],
             }));
-          }}>
+          }} className="border-[#ddb866] text-[#ddb866] hover:bg-[#ddb866] hover:text-white">
             <Plus className="h-4 w-4 mr-2" />
             Add Image
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl shadow-lg">
         <CardHeader>
-          <CardTitle>Product Tags</CardTitle>
+          <CardTitle className="text-[#0a0a4a]">Product Tags</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-500">Add tags to categorize this product.</p>
@@ -380,16 +383,17 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
                   addTag();
                 }
               }}
+              className="border-gray-300 focus:border-[#ddb866]"
             />
-            <Button type="button" onClick={addTag}>
+            <Button type="button" onClick={addTag} className="bg-[#ddb866] text-white hover:bg-[#ddb866]/80 shadow-md">
               Add Tag
             </Button>
           </div>
           <div className="flex flex-wrap gap-2">
             {product.tags.map((tag, index) => (
-              <Badge key={index} variant="secondary" className="pl-3 pr-2 py-1 flex items-center gap-1">
+              <Badge key={index} style={{ backgroundColor: '#ddb866', color: '#0a0a4a' }} className="pl-3 pr-2 py-1 flex items-center gap-1 hover:bg-[#ddb866]/80">
                 {tag}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
+                <X className="h-3 w-3 cursor-pointer text-gray-800" onClick={() => removeTag(tag)} />
               </Badge>
             ))}
           </div>
@@ -397,7 +401,7 @@ export function ProductEditor({ productId, onBack }: { productId: string | null;
       </Card>
 
       <CardFooter className="flex justify-end">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} className="bg-[#0a0a4a] text-white hover:bg-[#0a0a4a]/90 shadow-lg transition-all duration-300 transform hover:scale-105">
           {loading ? 'Saving...' : 'Save Product'}
         </Button>
       </CardFooter>
