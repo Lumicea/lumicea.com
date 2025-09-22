@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, addDoc, updateDoc, collection, getDocs, setDoc } from "firebase/firestore";
-import { getAuth, signInWithCustomToken, signInAnonymously } from "firebase/auth";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -39,33 +36,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-
-// Firestore database security rules summary:
-// Public data: /artifacts/{appId}/public/data/{your_collection_name}
-// Private data: /artifacts/{appId}/users/{userId}/{your_collection_name}
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-let userId = '';
-
-const authenticate = async () => {
-  try {
-    if (initialAuthToken) {
-      await signInWithCustomToken(auth, initialAuthToken);
-    } else {
-      await signInAnonymously(auth);
-    }
-    userId = auth.currentUser?.uid || '';
-    console.log("Authentication successful, user ID:", userId);
-  } catch (error) {
-    console.error("Authentication failed:", error);
-  }
-};
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/supabaseClient';
 
 interface VariantOption {
   name: string;
@@ -81,6 +53,7 @@ interface Variant {
 }
 
 interface Product {
+  id: string;
   title: string;
   description: string;
   price: number;
@@ -99,21 +72,7 @@ interface Product {
 const ProductEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<Product>({
-    title: '',
-    description: '',
-    price: 0,
-    category: '',
-    variants: [],
-    images: [],
-    tags: [],
-    quantity: 0,
-    is_made_to_order: false,
-    is_active: true,
-    is_featured: false,
-    created_at: new Date(),
-    updated_at: new Date(),
-  });
+  const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [existingTags, setExistingTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,70 +82,78 @@ const ProductEditor = () => {
   const [openCategory, setOpenCategory] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      await authenticate();
+    const fetchProductData = async () => {
+      setLoading(true);
       if (id) {
-        const docRef = doc(db, `/artifacts/${appId}/users/${userId}/products/${id}`);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const productData = docSnap.data() as Product;
-          // Ensure variants field is properly structured
-          if (!productData.variants) {
-            productData.variants = [];
-          }
-          setProduct(productData);
-        } else {
-          toast.error("Product not found.");
+        const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
+        if (error) {
+          toast.error("Failed to load product.");
+          console.error(error);
           navigate('/admin/products');
+        } else if (data) {
+          setProduct(data as Product);
+          setIsNewProduct(false);
         }
       } else {
+        setProduct({
+          id: uuidv4(),
+          title: '',
+          description: '',
+          price: 0,
+          category: '',
+          variants: [],
+          images: [],
+          tags: [],
+          quantity: 0,
+          is_made_to_order: false,
+          is_active: true,
+          is_featured: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
         setIsNewProduct(true);
       }
       setLoading(false);
     };
 
-    fetchData();
-  }, [id, navigate]);
-
-  useEffect(() => {
-    const fetchCategoriesAndTags = async () => {
-      const productCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/products`);
-      const querySnapshot = await getDocs(productCollectionRef);
-      const uniqueCategories = new Set<string>();
-      const allTags = new Set<string>();
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.category) {
-          uniqueCategories.add(data.category);
-        }
-        if (data.tags && Array.isArray(data.tags)) {
-          data.tags.forEach((tag: string) => allTags.add(tag));
-        }
-      });
-      setCategories(Array.from(uniqueCategories));
-      setExistingTags(Array.from(allTags));
+    const fetchDropdownData = async () => {
+      const { data, error } = await supabase.from('products').select('category, tags');
+      if (error) {
+        console.error("Failed to fetch dropdown data:", error);
+      } else {
+        const uniqueCategories = new Set<string>();
+        const allTags = new Set<string>();
+        data.forEach(p => {
+          if (p.category) uniqueCategories.add(p.category);
+          if (p.tags) p.tags.forEach((tag: string) => allTags.add(tag));
+        });
+        setCategories(Array.from(uniqueCategories));
+        setExistingTags(Array.from(allTags));
+      }
     };
 
-    if (userId) {
-      fetchCategoriesAndTags();
-    }
-  }, [userId]);
+    fetchProductData();
+    fetchDropdownData();
+  }, [id, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    if (!product) return;
     if (type === 'checkbox') {
-      setProduct(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+      setProduct(prev => prev ? ({ ...prev, [name]: (e.target as HTMLInputElement).checked }) : null);
     } else {
-      setProduct(prev => ({
+      setProduct(prev => prev ? ({
         ...prev,
         [name]: name === 'price' || name === 'quantity' ? (value === '' ? null : parseFloat(value)) : value,
-      }));
+      }) : null);
     }
   };
 
   const handleVariantChange = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!product) return;
     const { name, value } = e.target;
     setProduct(prev => {
+      if (!prev) return null;
       const newVariants = [...prev.variants];
       newVariants[variantIndex] = { ...newVariants[variantIndex], [name]: value };
       return { ...prev, variants: newVariants };
@@ -194,8 +161,10 @@ const ProductEditor = () => {
   };
 
   const handleOptionChange = (variantIndex: number, optionIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!product) return;
     const { name, value, type } = e.target;
     setProduct(prev => {
+      if (!prev) return null;
       const newVariants = [...prev.variants];
       const newOptions = [...newVariants[variantIndex].options];
       newOptions[optionIndex] = {
@@ -208,14 +177,17 @@ const ProductEditor = () => {
   };
 
   const addMasterVariant = () => {
-    setProduct(prev => ({
+    if (!product) return;
+    setProduct(prev => prev ? ({
       ...prev,
       variants: [...prev.variants, { name: '', options: [] }],
-    }));
+    }) : null);
   };
 
   const addVariantOption = (variantIndex: number, name: string) => {
+    if (!product) return;
     setProduct(prev => {
+      if (!prev) return null;
       const newVariants = [...prev.variants];
       const newOptions = [...newVariants[variantIndex].options];
       newOptions.push({ name: name, price_change: 0, is_sold_out: false });
@@ -226,14 +198,17 @@ const ProductEditor = () => {
   };
 
   const removeMasterVariant = (variantIndex: number) => {
-    setProduct(prev => ({
+    if (!product) return;
+    setProduct(prev => prev ? ({
       ...prev,
       variants: prev.variants.filter((_, i) => i !== variantIndex),
-    }));
+    }) : null);
   };
 
   const removeVariantOption = (variantIndex: number, optionIndex: number) => {
+    if (!product) return;
     setProduct(prev => {
+      if (!prev) return null;
       const newVariants = [...prev.variants];
       newVariants[variantIndex].options = newVariants[variantIndex].options.filter((_, i) => i !== optionIndex);
       return { ...prev, variants: newVariants };
@@ -241,11 +216,13 @@ const ProductEditor = () => {
   };
 
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>, variantIndex?: number, optionIndex?: number) => {
+    if (!product) return;
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const imageUrl = URL.createObjectURL(file);
       if (variantIndex !== undefined && optionIndex !== undefined) {
         setProduct(prev => {
+          if (!prev) return null;
           const newVariants = [...prev.variants];
           const newOptions = [...newVariants[variantIndex].options];
           const newImages = [...(newOptions[optionIndex].images || []), imageUrl];
@@ -254,17 +231,19 @@ const ProductEditor = () => {
           return { ...prev, variants: newVariants };
         });
       } else {
-        setProduct(prev => ({
+        setProduct(prev => prev ? ({
           ...prev,
           images: [...prev.images, imageUrl]
-        }));
+        }) : null);
       }
     }
   };
 
   const handleImageRemove = (imageToRemove: string, variantIndex?: number, optionIndex?: number) => {
+    if (!product) return;
     if (variantIndex !== undefined && optionIndex !== undefined) {
       setProduct(prev => {
+        if (!prev) return null;
         const newVariants = [...prev.variants];
         const newOptions = [...newVariants[variantIndex].options];
         newOptions[optionIndex].images = (newOptions[optionIndex].images || []).filter(img => img !== imageToRemove);
@@ -272,106 +251,104 @@ const ProductEditor = () => {
         return { ...prev, variants: newVariants };
       });
     } else {
-      setProduct(prev => ({
+      setProduct(prev => prev ? ({
         ...prev,
         images: prev.images.filter(img => img !== imageToRemove),
-      }));
+      }) : null);
     }
   };
 
   const handleTagAdd = (tag: string) => {
+    if (!product) return;
     if (tag.trim() !== '' && !product.tags.includes(tag.trim())) {
-      setProduct(prev => ({
+      setProduct(prev => prev ? ({
         ...prev,
         tags: [...prev.tags, tag.trim()],
-      }));
+      }) : null);
     }
   };
 
   const handleTagRemove = (tagToRemove: string) => {
-    setProduct(prev => ({
+    if (!product) return;
+    setProduct(prev => prev ? ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove),
-    }));
+    }) : null);
   };
 
   const handleAddCategory = () => {
     if (categoryInput.trim() !== '') {
       setCategories(prev => [...new Set([...prev, categoryInput.trim()])]);
-      setProduct(prev => ({ ...prev, category: categoryInput.trim() }));
+      setProduct(prev => prev ? ({ ...prev, category: categoryInput.trim() }) : null);
       setCategoryInput('');
     }
     setOpenCategory(false);
   };
 
   const handleDuplicateProduct = async () => {
-    try {
-      const newProduct = {
-        ...product,
-        title: `${product.title} (Copy)`,
-        created_at: new Date(),
-        updated_at: new Date(),
-        is_active: false,
-        is_featured: false,
-      };
-      // Remove the id and any document-specific fields
-      delete newProduct.id;
-      const docRef = await addDoc(collection(db, `/artifacts/${appId}/users/${userId}/products`), newProduct);
-      toast.success("Product duplicated successfully!");
-      navigate(`/admin/products/${docRef.id}`);
-    } catch (e) {
-      console.error("Error duplicating document: ", e);
+    if (!product) return;
+    const newProduct = {
+      ...product,
+      id: uuidv4(),
+      title: `${product.title} (Copy)`,
+      created_at: new Date(),
+      updated_at: new Date(),
+      is_active: false,
+      is_featured: false,
+    };
+    const { error } = await supabase.from('products').insert([newProduct]);
+    if (error) {
       toast.error("Failed to duplicate product.");
+      console.error(error);
+    } else {
+      toast.success("Product duplicated successfully!");
+      navigate(`/admin/products/${newProduct.id}`);
     }
   };
 
   const handleDeleteProduct = async () => {
-    try {
-      if (id) {
-        await setDoc(doc(db, `/artifacts/${appId}/users/${userId}/products/${id}`), {
-          is_active: false, // Soft delete
-          updated_at: new Date(),
-        }, { merge: true });
-        toast.success("Product archived successfully!");
-        navigate('/admin/products');
-      }
-    } catch (e) {
-      console.error("Error deleting document: ", e);
+    if (!product) return;
+    const { error } = await supabase.from('products').update({ is_active: false }).eq('id', product.id);
+    if (error) {
       toast.error("Failed to archive product.");
+      console.error(error);
+    } else {
+      toast.success("Product archived successfully!");
+      navigate('/admin/products');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!product.title || !product.description) {
+    if (!product || !product.title || !product.description) {
       toast.error("Please fill in all required fields.");
       return;
     }
 
-    try {
-      if (isNewProduct) {
-        await addDoc(collection(db, `/artifacts/${appId}/users/${userId}/products`), {
-          ...product,
-          created_at: new Date(),
-          updated_at: new Date(),
-        });
-        toast.success("Product created successfully!");
+    const { id, created_at, updated_at, ...updateData } = product;
+
+    if (isNewProduct) {
+      const { error } = await supabase.from('products').insert([product]);
+      if (error) {
+        toast.error("Failed to create product.");
+        console.error(error);
       } else {
-        const docRef = doc(db, `/artifacts/${appId}/users/${userId}/products/${id}`);
-        await updateDoc(docRef, {
-          ...product,
-          updated_at: new Date(),
-        });
-        toast.success("Product updated successfully!");
+        toast.success("Product created successfully!");
+        navigate('/admin/products');
       }
-      navigate('/admin/products');
-    } catch (e) {
-      console.error("Error adding/updating document: ", e);
-      toast.error("Failed to save product.");
+    } else {
+      const { error } = await supabase.from('products').update({ ...updateData, updated_at: new Date() }).eq('id', id);
+      if (error) {
+        toast.error("Failed to update product.");
+        console.error(error);
+      } else {
+        toast.success("Product updated successfully!");
+        navigate('/admin/products');
+      }
     }
   };
 
-  if (loading) {
+  if (loading || !product) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <p>Loading...</p>
@@ -479,7 +456,7 @@ const ProductEditor = () => {
                           <CommandItem
                             key={cat}
                             onSelect={() => {
-                              setProduct(prev => ({ ...prev, category: cat }));
+                              setProduct(prev => prev ? ({ ...prev, category: cat }) : null);
                               setOpenCategory(false);
                             }}
                           >
@@ -499,7 +476,7 @@ const ProductEditor = () => {
                   id="madeToOrder"
                   name="is_made_to_order"
                   checked={product.is_made_to_order}
-                  onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_made_to_order: checked as boolean, quantity: null }))}
+                  onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_made_to_order: checked as boolean, quantity: null }) : null)}
                 />
                 <label htmlFor="madeToOrder" className="text-sm">Made to Order</label>
                 <Input
@@ -666,128 +643,124 @@ const ProductEditor = () => {
                   </div>
                   <div className="space-y-2">
                     {variant.options.map((option, optionIndex) => (
-                      <div key={optionIndex} className="p-2 bg-white rounded-md border border-gray-200">
+                      <div key={optionIndex} className="bg-white p-3 rounded-md border border-gray-200">
                         <div className="flex items-center space-x-2 mb-2">
+                          <Label className="text-sm flex-grow">{variant.name || 'Option'} Name</Label>
                           <Input
+                            type="text"
                             name="name"
                             value={option.name}
                             onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)}
-                            placeholder="Option Name"
                             className="flex-grow"
+                            placeholder="e.g., Silver"
                           />
-                          <Input
-                            type="number"
-                            name="price_change"
-                            value={option.price_change}
-                            onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)}
-                            placeholder="Price Change"
-                            className="w-24 text-right"
-                          />
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Checkbox
-                                  id={`sold-out-${variantIndex}-${optionIndex}`}
-                                  name="is_sold_out"
-                                  checked={option.is_sold_out}
-                                  onCheckedChange={(checked) => handleOptionChange(variantIndex, optionIndex, { target: { name: 'is_sold_out', checked } } as any)}
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Sold Out</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => removeVariantOption(variantIndex, optionIndex)}
                           >
-                            <Trash2 className="h-4 w-4 text-gray-400" />
+                            <Trash2 className="h-4 w-4 text-gray-500" />
                           </Button>
                         </div>
-                        <div className="flex justify-between items-center text-sm text-gray-500 mb-2">
-                          <span>Images for this variant option:</span>
-                          <Label htmlFor={`option-image-upload-${variantIndex}-${optionIndex}`} className="cursor-pointer">
-                            <span className="text-[#ddb866] hover:text-[#c4a259] flex items-center space-x-1">
-                              <Image className="h-4 w-4" />
-                              <span>Add</span>
-                            </span>
-                          </Label>
-                          <Input
-                            id={`option-image-upload-${variantIndex}-${optionIndex}`}
-                            type="file"
-                            multiple
-                            onChange={(e) => handleImageAdd(e, variantIndex, optionIndex)}
-                            className="hidden"
-                          />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-500">Price Change ($)</Label>
+                            <Input
+                              type="number"
+                              name="price_change"
+                              value={option.price_change}
+                              onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-500">SKU</Label>
+                            <Input
+                              type="text"
+                              name="sku"
+                              value={option.sku || ''}
+                              onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)}
+                              placeholder="SKU"
+                            />
+                          </div>
                         </div>
-                        <ScrollArea className="w-full whitespace-nowrap rounded-md border bg-gray-50 p-2">
-                          <div className="flex w-max space-x-2">
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Checkbox
+                            id={`sold-out-${variantIndex}-${optionIndex}`}
+                            name="is_sold_out"
+                            checked={option.is_sold_out}
+                            onCheckedChange={(checked) => handleOptionChange(variantIndex, optionIndex, { target: { name: 'is_sold_out', checked } } as any)}
+                          />
+                          <Label htmlFor={`sold-out-${variantIndex}-${optionIndex}`} className="text-sm">Sold Out?</Label>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          <Label className="text-xs text-gray-500">Option Images</Label>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor={`image-upload-${variantIndex}-${optionIndex}`} className="cursor-pointer">
+                              <div className="flex items-center space-x-2 text-[#ddb866] hover:text-[#c4a259]">
+                                <Image className="h-4 w-4" />
+                                <span>Add Images</span>
+                              </div>
+                            </Label>
+                            <Input
+                              id={`image-upload-${variantIndex}-${optionIndex}`}
+                              type="file"
+                              multiple
+                              onChange={(e) => handleImageAdd(e, variantIndex, optionIndex)}
+                              className="hidden"
+                            />
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-2">
                             {(option.images || []).map((img, imgIndex) => (
                               <div key={imgIndex} className="relative w-16 h-16 rounded-md overflow-hidden group">
-                                <img src={img} alt="Variant Option" className="w-full h-full object-cover" />
+                                <img src={img} alt="Variant" className="w-full h-full object-cover" />
                                 <button
                                   type="button"
                                   onClick={() => handleImageRemove(img, variantIndex, optionIndex)}
-                                  className="absolute top-0.5 right-0.5 text-white bg-gray-900/50 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute top-1 right-1 text-white bg-gray-900/50 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <XCircle className="h-3 w-3" />
                                 </button>
                               </div>
                             ))}
                           </div>
-                        </ScrollArea>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
             ))}
-            <Button type="button" variant="outline" onClick={addMasterVariant} className="text-[#ddb866] hover:text-[#c4a259]">
-              <PlusCircle className="h-4 w-4 mr-2" /> Add Variant Type
+            <Button type="button" variant="outline" onClick={addMasterVariant} className="w-full border-dashed text-gray-500 hover:text-gray-800">
+              <PlusCircle className="h-4 w-4 mr-2" /> Add Variant
             </Button>
           </div>
-          
-          <Separator />
-          
+
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="isFeatured"
-                name="is_featured"
-                checked={product.is_featured}
-                onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_featured: checked as boolean }))}
+                id="active"
+                name="is_active"
+                checked={product.is_active}
+                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_active: checked as boolean }) : null)}
               />
-              <Label htmlFor="isFeatured">Featured Product</Label>
+              <Label htmlFor="active" className="text-sm">Active</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="isActive"
-                name="is_active"
-                checked={product.is_active}
-                onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_active: checked as boolean }))}
+                id="featured"
+                name="is_featured"
+                checked={product.is_featured}
+                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_featured: checked as boolean }) : null)}
               />
-              <Label htmlFor="isActive">Active (Visible)</Label>
+              <Label htmlFor="featured" className="text-sm">Featured</Label>
             </div>
           </div>
-
-          <div className="flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/admin/products')}
-              className="text-gray-700 border-gray-300 hover:bg-gray-200"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="bg-[#ddb866] text-[#0a0a4a] hover:bg-[#c4a259] transition-colors"
-            >
-              {isNewProduct ? 'Create Product' : 'Save Changes'}
-            </Button>
+          
+          <div className="pt-4 flex justify-end space-x-4">
+            <Button type="button" variant="outline" onClick={() => navigate('/admin/products')}>Cancel</Button>
+            <Button type="submit">Save Product</Button>
           </div>
         </form>
       </div>
