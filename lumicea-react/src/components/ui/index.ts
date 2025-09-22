@@ -8,7 +8,7 @@ export * from './textarea';
 export * from './switch';
 export * from './badge';
 export * from './breadcrumb.tsx';
-export * from './checkbox.tsx';\
+export * from './checkbox.tsx';
 export * from './cookie-consent.tsx';
 export * from './dialog.tsx';
 export * from './drawer.tsx';
