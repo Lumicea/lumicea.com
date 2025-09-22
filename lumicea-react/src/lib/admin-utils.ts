@@ -1,3 +1,5 @@
+// src/lib/admin-utils.ts
+
 import { supabase } from './supabase';
 
 // Function to check if user is admin
@@ -7,19 +9,19 @@ export async function isUserAdmin(): Promise<boolean> {
     if (!user) {
       return false;
     }
-    
+
     const { data, error } = await supabase
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
       .single();
-    
+
     if (error || !data) {
       // If we can't determine the role from the database, check if the email is in the admin list
       const adminEmails = ['admin@lumicea.com', 'swyatt@lumicea.com', 'olipg@hotmail.co.uk'];
       return adminEmails.includes(user.email || '');
     }
-    
+
     // Check if the user's role is 'admin' or if their email is in the list of admin emails
     const adminEmails = ['admin@lumicea.com', 'swyatt@lumicea.com', 'olipg@hotmail.co.uk'];
     return data.role === 'admin' || adminEmails.includes(user.email || '');
@@ -36,49 +38,49 @@ export async function fetchDashboardStats() {
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('total_amount, status, created_at');
-    
+
     if (ordersError) throw ordersError;
-    
+
     // Fetch customer count
     const { data: customers, error: customersError } = await supabase
       .from('user_profiles')
       .select('id')
       .eq('role', 'customer');
-    
+
     if (customersError) throw customersError;
-    
+
     // Fetch product count
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('id, is_active');
-    
+
     if (productsError) throw productsError;
-    
+
     // Calculate current period stats (last 30 days)
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-    
+
     const recentOrders = orders?.filter(o => new Date(o.created_at) >= thirtyDaysAgo) || [];
-    const previousOrders = orders?.filter(o => 
+    const previousOrders = orders?.filter(o =>
       new Date(o.created_at) >= sixtyDaysAgo && new Date(o.created_at) < thirtyDaysAgo
     ) || [];
-    
+
     const totalSales = recentOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
     const previousSales = previousOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
     const salesGrowth = previousSales > 0 ? ((totalSales - previousSales) / previousSales) * 100 : 0;
-    
-    const ordersGrowth = previousOrders.length > 0 ? 
+
+    const ordersGrowth = previousOrders.length > 0 ?
       ((recentOrders.length - previousOrders.length) / previousOrders.length) * 100 : 0;
-    
+
     const pendingOrdersCount = orders?.filter(o => o.status === 'pending').length || 0;
-    
+
     // Fetch low stock products
     const { data: lowStockData, error: lowStockError } = await supabase
       .rpc('get_low_stock_variants');
-    
+
     if (lowStockError) throw lowStockError;
-    
+
     return {
       totalSales,
       totalOrders: recentOrders.length,
@@ -101,17 +103,17 @@ export async function fetchRecentOrders(limit: number = 5) {
     const { data, error } = await supabase
       .from('orders')
       .select(`
-        id, 
-        order_number, 
-        customer_email, 
-        total_amount, 
-        status, 
+        id,
+        order_number,
+        customer_email,
+        total_amount,
+        status,
         created_at,
         shipping_address:shipping_addresses!orders_shipping_address_id_fkey(first_name, last_name)
       `)
       .order('created_at', { ascending: false })
       .limit(limit);
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -126,7 +128,7 @@ export async function fetchLowStockProducts(limit: number = 5) {
     const { data, error } = await supabase
       .rpc('get_low_stock_variants')
       .limit(limit);
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -146,14 +148,14 @@ export async function fetchCategories() {
         products(count)
       `)
       .order('sort_order');
-    
+
     if (error) throw error;
-    
+
     const categoriesWithCount = data?.map(cat => ({
       ...cat,
       product_count: cat.products?.length || 0
     })) || [];
-    
+
     return categoriesWithCount;
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -171,14 +173,14 @@ export async function fetchTags() {
         product_tags(count)
       `)
       .order('name');
-    
+
     if (error) throw error;
-    
+
     const tagsWithCount = data?.map(tag => ({
       ...tag,
       product_count: tag.product_tags?.length || 0
     })) || [];
-    
+
     return tagsWithCount;
   } catch (error) {
     console.error('Error fetching tags:', error);
@@ -186,25 +188,109 @@ export async function fetchTags() {
   }
 }
 
-// Function to fetch products
-export async function fetchProducts() {
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(name),
-        variants:product_variants(id, sku, stock_quantity, low_stock_threshold)
-      `)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
+// Function to fetch products for the main admin product list page
+export const fetchProducts = async () => {
+  const { data, error } = await supabase
+    .from('products')
+    .select(`
+      id,
+      name,
+      slug,
+      sku_prefix,
+      base_price,
+      is_active,
+      is_featured,
+      created_at,
+      variants:product_variants (
+        id,
+        sku,
+        stock_quantity,
+        low_stock_threshold
+      ),
+      category:product_collections (
+        name:collection_name
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
     console.error('Error fetching products:', error);
     throw error;
   }
-}
+
+  return data || [];
+};
+
+// This function fetches a single product with all its detailed relationships
+export const getProductData = async (productId: string) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select(`
+      *,
+      images:product_images (
+        id,
+        image_url,
+        is_master,
+        sort_order
+      ),
+      product_tags:product_to_tag (
+        tag:product_tag_names (
+          id,
+          tag_name
+        )
+      ),
+      collections:product_to_collection (
+        collection:product_collections (
+          id,
+          collection_name
+        )
+      ),
+      variants:product_variants (
+        id,
+        sku,
+        stock_quantity,
+        price,
+        compare_at_price,
+        options:product_variant_options (
+          option:variant_options (
+            id,
+            option_name,
+            is_sold_out
+          )
+        ),
+        images:product_images (
+          id,
+          image_url,
+          sort_order
+        ),
+        prices:product_prices (
+          id,
+          region,
+          price
+        )
+      )
+    `)
+    .eq('id', productId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching product data:', error);
+    return null;
+  }
+
+  // Flatten the data structure to make it easier to work with in the UI
+  const product = {
+    ...data,
+    product_tags: data.product_tags?.map(t => t.tag.tag_name),
+    collections: data.collections?.map(c => c.collection),
+    variants: data.variants?.map(v => ({
+      ...v,
+      options: v.options?.map(o => o.option),
+    })),
+  };
+
+  return product;
+};
 
 // Function to fetch orders
 export async function fetchOrders() {
@@ -217,7 +303,7 @@ export async function fetchOrders() {
         order_items(quantity, product_name)
       `)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -237,7 +323,7 @@ export async function fetchCustomers() {
       `)
       .eq('role', 'customer')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -263,9 +349,9 @@ export async function fetchInventory() {
       `)
       .eq('is_active', true)
       .order('stock_quantity', { ascending: true });
-    
+
     if (error) throw error;
-    
+
     const inventoryData = data?.map(item => ({
       variant_id: item.id,
       product_name: item.product?.name || 'Unknown Product', // Corrected field access
@@ -276,7 +362,7 @@ export async function fetchInventory() {
       cost_price: item.cost_price || 0,
       retail_price: item.price,
     })) || [];
-    
+
     return inventoryData;
   } catch (error) {
     console.error('Error fetching inventory:', error);
@@ -298,7 +384,7 @@ export async function updateStockLevel(
       p_transaction_type: transactionType,
       p_notes: notes,
     });
-    
+
     if (error) throw error;
     return true;
   } catch (error) {
@@ -314,7 +400,7 @@ export async function fetchPromotions() {
       .from('promotions')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -330,7 +416,7 @@ export async function fetchShippingMethods() {
       .from('shipping_methods')
       .select('*')
       .order('sort_order');
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -346,7 +432,7 @@ export async function fetchTaxRates() {
       .from('tax_rates')
       .select('*')
       .order('country', { ascending: true });
-    
+
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -361,9 +447,9 @@ export async function fetchSystemSettings() {
     const { data, error } = await supabase
       .from('system_settings')
       .select('*');
-    
+
     if (error) throw error;
-    
+
     const settingsMap: Record<string, Record<string, unknown>> = {};
     data?.forEach(setting => {
       if (!settingsMap[setting.category]) {
@@ -371,7 +457,7 @@ export async function fetchSystemSettings() {
       }
       settingsMap[setting.category][setting.key] = setting.value;
     });
-    
+
     return settingsMap;
   } catch (error) {
     console.error('Error fetching system settings:', error);
@@ -390,7 +476,7 @@ export async function updateSystemSetting(category: string, key: string, value: 
         value,
         updated_by: (await supabase.auth.getUser()).data.user?.id
       });
-    
+
     if (error) throw error;
     return true;
   } catch (error) {
@@ -409,9 +495,9 @@ export async function fetchAnalyticsData(dateRange: string) {
       .eq('report_type', 'daily')
       .gte('report_date', new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
       .order('report_date', { ascending: true });
-    
+
     if (salesError) throw salesError;
-    
+
     // Fetch product sales data
     const { data: orderItems, error: itemsError } = await supabase
       .from('order_items')
@@ -423,9 +509,9 @@ export async function fetchAnalyticsData(dateRange: string) {
       `)
       .gte('order.created_at', new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString())
       .in('order.status', ['processing', 'shipped', 'delivered']);
-    
+
     if (itemsError) throw itemsError;
-    
+
     // Aggregate product sales
     const productSalesMap = new Map();
     orderItems?.forEach(item => {
@@ -436,11 +522,11 @@ export async function fetchAnalyticsData(dateRange: string) {
         revenue: existing.revenue + item.total_price
       });
     });
-    
+
     const productSales = Array.from(productSalesMap.values())
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
-    
+
     return {
       salesData: salesReports || [],
       productSales
