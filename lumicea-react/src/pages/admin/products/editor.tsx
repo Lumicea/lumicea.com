@@ -36,7 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/lib/supabase';
 
 interface VariantOption {
   name: string;
