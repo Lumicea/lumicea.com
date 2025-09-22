@@ -21,4 +21,4 @@ const ScrollArea: FC<ScrollAreaProps> = ({ children, className }) => {
   );
 };
 
-export default ScrollArea;
+export { ScrollArea };
