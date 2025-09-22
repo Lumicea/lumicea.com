@@ -140,4 +140,8 @@ export function AdminProductsListPage({ onEdit, onAdd }: { onEdit: (productId: s
       </Card>
     </div>
   );
+
+  export function ProductEditor({ productId, onBack }) {
+  // ... rest of the code
+}
 }
