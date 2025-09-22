@@ -12,6 +12,15 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 
+// Helper function to sanitize HTML content without a library
+// WARNING: This is a basic function and is not a comprehensive security solution.
+// For a production app, a robust sanitization library like DOMPurify is recommended.
+const sanitizeHtml = (html: string) => {
+  if (typeof html !== 'string') return '';
+  const scriptRegex = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
+  return html.replace(scriptRegex, '');
+};
+
 // Define the shape of a single image
 interface ProductImage {
   id: string;
@@ -53,6 +62,10 @@ interface Product {
   variants: ProductVariant[];
   tags: string[];
   categories: string[];
+  // Added new fields for dynamic tab content
+  shipping_info: string;
+  processing_times: string;
+  size_guide: string;
 }
 
 const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors";
@@ -77,9 +90,19 @@ export function ProductDetailPage() {
         return;
       }
 
+      // Updated the select query to include new fields for tabs
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          images,
+          variants,
+          tags,
+          categories,
+          shipping_info,
+          processing_times,
+          size_guide
+        `)
         .eq('slug', slug)
         .single();
 
@@ -87,12 +110,15 @@ export function ProductDetailPage() {
         console.error('Error fetching product:', error.message);
         setProduct(null);
       } else if (data) {
-        const parsedProduct = {
+        const parsedProduct: Product = {
           ...data,
           images: data.images ? JSON.parse(data.images) : [],
           variants: data.variants ? JSON.parse(data.variants) : [],
           tags: data.tags ? JSON.parse(data.tags) : [],
           categories: data.categories ? JSON.parse(data.categories) : [],
+          shipping_info: data.shipping_info || '',
+          processing_times: data.processing_times || '',
+          size_guide: data.size_guide || '',
         };
         setProduct(parsedProduct);
         if (parsedProduct.images && parsedProduct.images.length > 0) {
@@ -126,9 +152,9 @@ export function ProductDetailPage() {
   const handleVariantSelect = (variantId: string, optionId: string) => {
     setSelectedVariants(prev => ({ ...prev, [variantId]: optionId }));
     if (product) {
-        const variantSpecificImage = product.images.find(img => img.variantOptionId === optionId);
-        const mainImage = product.images.find(img => img.isMain) || product.images[0];
-        setSelectedImage(variantSpecificImage || mainImage || null);
+      const variantSpecificImage = product.images.find(img => img.variantOptionId === optionId);
+      const mainImage = product.images.find(img => img.isMain) || product.images[0];
+      setSelectedImage(variantSpecificImage || mainImage || null);
     }
   };
 
@@ -224,7 +250,7 @@ export function ProductDetailPage() {
                 <p className="text-sm text-gray-500">In stock: {product.quantity}</p>
               )}
 
-              <div className="text-gray-700 leading-relaxed [&_p]:my-4 [&_p]:leading-loose" dangerouslySetInnerHTML={{ __html: product.description }}></div>
+              <div className="text-gray-700 leading-relaxed [&_p]:my-4 [&_p]:leading-loose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>
 
               {/* Variant Selects */}
               <div className="space-y-4">
@@ -277,13 +303,17 @@ export function ProductDetailPage() {
               {/* Product Features & Info */}
               <div className="bg-gray-100 rounded-lg p-6 space-y-3 shadow-inner">
                 <div className="text-[#0a0a4a] font-medium text-lg">Product Features</div>
-                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: product.features }}></div>
+                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.features) }}></div>
               </div>
 
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {product.tags.map((tag, index) => (
-                  <Badge key={index} className="bg-gray-200 text-gray-700 rounded-full">{tag}</Badge>
+                  <Link to={`/tags/${tag.toLowerCase()}`} key={index}>
+                    <Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">
+                      {tag}
+                    </Badge>
+                  </Link>
                 ))}
               </div>
               
@@ -313,6 +343,12 @@ export function ProductDetailPage() {
                 Description
               </button>
               <button 
+                className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
+                onClick={() => setActiveTab('features')}
+              >
+                Product Features
+              </button>
+              <button 
                 className={`${TAB_BUTTON_STYLE} ${activeTab === 'reviews' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
                 onClick={() => setActiveTab('reviews')}
               >
@@ -324,10 +360,25 @@ export function ProductDetailPage() {
               >
                 Shipping
               </button>
+              <button 
+                className={`${TAB_BUTTON_STYLE} ${activeTab === 'processing' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
+                onClick={() => setActiveTab('processing')}
+              >
+                Processing
+              </button>
+              <button 
+                className={`${TAB_BUTTON_STYLE} ${activeTab === 'sizeGuide' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
+                onClick={() => setActiveTab('sizeGuide')}
+              >
+                Size Guide
+              </button>
             </div>
             <div className="bg-white p-6 rounded-b-lg border border-gray-200">
               {activeTab === 'description' && (
-                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: product.description }}></div>
+                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>
+              )}
+              {activeTab === 'features' && (
+                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.features) }}></div>
               )}
               {activeTab === 'reviews' && (
                 <div>
@@ -337,13 +388,13 @@ export function ProductDetailPage() {
                 </div>
               )}
               {activeTab === 'shipping' && (
-                <div className="text-gray-700 leading-relaxed">
-                  <p>All orders are processed within 1-2 business days. Shipping times vary based on location.</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>UK Standard Shipping: 3-5 business days</li>
-                    <li>International Shipping: 7-14 business days</li>
-                  </ul>
-                </div>
+                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.shipping_info) }}></div>
+              )}
+              {activeTab === 'processing' && (
+                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>
+              )}
+              {activeTab === 'sizeGuide' && (
+                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.size_guide) }}></div>
               )}
             </div>
           </div>
