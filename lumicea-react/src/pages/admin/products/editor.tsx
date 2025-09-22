@@ -1,78 +1,114 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ChevronLeft } from 'lucide-react';
 
-// Define the shape of our product data
 interface Product {
-  id: string;
+  id?: string;
   name: string;
   sku_prefix: string;
-  base_price: string;
+  base_price: number;
   is_active: boolean;
   is_featured: boolean;
-  created_at: string;
-  variants: Array<{ stock_quantity: number }>;
 }
 
 /**
- * AdminProductsListPage component for displaying a list of products.
- * @param onEdit Callback function to navigate to the product editor for an existing product.
- * @param onAdd Callback function to navigate to the product editor for a new product.
+ * ProductEditor component for creating and editing a product.
+ * @param productId The ID of the product to edit, or null for a new product.
+ * @param onBack Callback function to navigate back to the product list.
  */
-export function AdminProductsListPage({ onEdit, onAdd }: { onEdit: (productId: string) => void; onAdd: () => void }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ProductEditor({ productId, onBack }: { productId: string | null; onBack: () => void }) {
+  const [product, setProduct] = useState<Product>({
+    name: '',
+    sku_prefix: '',
+    base_price: 0,
+    is_active: true,
+    is_featured: false,
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNewProduct, setIsNewProduct] = useState(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select(`
-            id,
-            name,
-            sku_prefix,
-            base_price,
-            is_active,
-            is_featured,
-            created_at,
-            variants ( stock_quantity )
-          `);
+    if (productId) {
+      setIsNewProduct(false);
+      const fetchProduct = async () => {
+        setLoading(true);
+        try {
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .single();
 
-        if (error) {
-          throw error;
+          if (error) {
+            throw error;
+          }
+          if (data) {
+            setProduct({ ...data, base_price: parseFloat(data.base_price) });
+          }
+        } catch (err) {
+          console.error('Failed to fetch product:', err);
+          setError('Failed to load product details.');
+        } finally {
+          setLoading(false);
         }
+      };
+      fetchProduct();
+    } else {
+      setIsNewProduct(true);
+      setProduct({
+        name: '',
+        sku_prefix: '',
+        base_price: 0,
+        is_active: true,
+        is_featured: false,
+      });
+    }
+  }, [productId]);
 
-        setProducts(data as Product[]);
-      } catch (err) {
-        console.error('Failed to fetch products:', err);
-        setError('Failed to load products. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
-
-  const totalStock = (variants: Array<{ stock_quantity: number }> | null) => {
-    if (!variants) return 0;
-    return variants.reduce((sum, variant) => sum + variant.stock_quantity, 0);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value, type, checked } = e.target;
+    setProduct(prev => ({
+      ...prev,
+      [id]: type === 'checkbox' ? checked : value,
+    }));
   };
 
-  if (loading) {
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setProduct(prev => ({
+      ...prev,
+      base_price: parseFloat(value) || 0,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      if (isNewProduct) {
+        const { error } = await supabase.from('products').insert(product);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('products').update(product).eq('id', productId);
+        if (error) throw error;
+      }
+      onBack();
+    } catch (err) {
+      console.error('Failed to save product:', err);
+      setError('Failed to save product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && !product.id) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -80,68 +116,49 @@ export function AdminProductsListPage({ onEdit, onAdd }: { onEdit: (productId: s
     );
   }
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
-  }
-
   return (
-    <div className="space-y-6 p-6">
+    <form onSubmit={handleSubmit} className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Products</h1>
-        <Button onClick={onAdd}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
+        <Button variant="ghost" size="sm" onClick={onBack} disabled={loading}>
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Back to List
         </Button>
+        <h1 className="text-3xl font-bold">{isNewProduct ? 'New Product' : `Edit Product: ${product.name}`}</h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Products ({products.length})</CardTitle>
+          <CardTitle>Product Details</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Name</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.sku_prefix}</TableCell>
-                    <TableCell>{formatCurrency(parseFloat(product.base_price))}</TableCell>
-                    <TableCell>{totalStock(product.variants)}</TableCell>
-                    <TableCell>
-                      <Badge variant={product.is_active ? 'default' : 'secondary'}>
-                        {product.is_active ? 'Active' : 'Draft'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => onEdit(product.id)}>
-                        <Pencil className="h-4 w-4 text-blue-500" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => { console.log('Delete logic for product:', product.id); }}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Product Name</Label>
+            <Input id="name" value={product.name} onChange={handleChange} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sku_prefix">SKU Prefix</Label>
+            <Input id="sku_prefix" value={product.sku_prefix} onChange={handleChange} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="base_price">Base Price</Label>
+            <Input id="base_price" type="number" value={product.base_price} onChange={handlePriceChange} required min="0" step="0.01" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="is_active" checked={product.is_active} onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_active: !!checked }))} />
+            <Label htmlFor="is_active">Active</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="is_featured" checked={product.is_featured} onCheckedChange={(checked) => setProduct(prev => ({ ...prev, is_featured: !!checked }))} />
+            <Label htmlFor="is_featured">Featured</Label>
           </div>
         </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Product'}
+          </Button>
+        </CardFooter>
       </Card>
-    </div>
+      {error && <div className="p-4 text-red-500">{error}</div>}
+    </form>
   );
-
-  export function ProductEditor({ productId, onBack }) {
-  // ... rest of the code
-}
 }
