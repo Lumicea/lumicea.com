@@ -1,18 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase.ts';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingCart, Heart } from 'lucide-react';
+import { ShoppingCart, Heart, Share2, Facebook, Twitter, Mail, ChevronRight, MessageCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+
+interface ProductImage {
+  id: string;
+  url: string;
+  altText: string;
+  isMain: boolean;
+  variantId?: string;
+}
+
+interface VariantOption {
+  id: string;
+  name: string;
+  price_change: number;
+}
+
+interface ProductVariant {
+  id: string;
+  name: string;
+  options: VariantOption[];
+}
+
+interface Product {
+  id?: string;
+  name: string;
+  slug: string;
+  sku_prefix: string;
+  base_price: number;
+  description: string;
+  features: string;
+  is_active: boolean;
+  is_featured: boolean;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  tags: string[];
+}
+
+const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors";
+const TAB_BUTTON_ACTIVE_STYLE = "bg-white text-[#0a0a4a] border-b-2 border-[#ddb866]";
+const TAB_BUTTON_INACTIVE_STYLE = "bg-gray-100 text-gray-600 hover:bg-gray-200";
 
 export function ProductDetailPage() {
   const { slug } = useParams();
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: string }>({});
+  const [calculatedPrice, setCalculatedPrice] = useState(0);
+  const [selectedImage, setSelectedImage] = useState<ProductImage | null>(null);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [activeTab, setActiveTab] = useState('description');
+  const [showPersonalisationModal, setShowPersonalisationModal] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -30,8 +78,19 @@ export function ProductDetailPage() {
       if (error) {
         console.error('Error fetching product:', error.message);
         setProduct(null);
-      } else {
-        setProduct(data);
+      } else if (data) {
+        const parsedProduct = {
+          ...data,
+          images: JSON.parse(data.images),
+          variants: JSON.parse(data.variants),
+          tags: JSON.parse(data.tags),
+        };
+        setProduct(parsedProduct);
+        if (parsedProduct.images && parsedProduct.images.length > 0) {
+          const mainImage = parsedProduct.images.find(img => img.isMain) || parsedProduct.images[0];
+          setSelectedImage(mainImage);
+        }
+        setCalculatedPrice(parsedProduct.base_price);
       }
       setLoading(false);
     }
@@ -39,20 +98,58 @@ export function ProductDetailPage() {
     fetchProduct();
   }, [slug]);
 
+  useEffect(() => {
+    if (product) {
+      let newPrice = product.base_price;
+      product.variants.forEach(variant => {
+        const selectedOptionId = selectedVariants[variant.id];
+        if (selectedOptionId) {
+          const selectedOption = variant.options.find(opt => opt.id === selectedOptionId);
+          if (selectedOption) {
+            newPrice += selectedOption.price_change;
+          }
+        }
+      });
+      setCalculatedPrice(newPrice);
+    }
+  }, [selectedVariants, product]);
+
+  const handleVariantSelect = (variantId: string, optionId: string) => {
+    setSelectedVariants(prev => ({ ...prev, [variantId]: optionId }));
+    if (product) {
+        const selectedOption = product.variants.find(v => v.id === variantId)?.options.find(o => o.id === optionId);
+        if (selectedOption) {
+            const variantSpecificImage = product.images.find(img => img.variantId === selectedOption.id);
+            if (variantSpecificImage) {
+                setSelectedImage(variantSpecificImage);
+            }
+        }
+    }
+  };
+
+  const handlePersonalisationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Logic for sending the personalisation message.
+    // We would fetch the form data here, including the hidden fields for URL and SKU,
+    // and send it to an API endpoint.
+    console.log("Personalisation request submitted.");
+    setShowPersonalisationModal(false);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Loading product details...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0a0a4a]"></div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="min-h-screen text-center py-20">
+      <div className="min-h-screen text-center py-20 bg-gray-50">
         <Header />
-        <div className="lumicea-container">
-          <h1 className="text-4xl font-bold mb-4">Product Not Found</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+          <h1 className="text-4xl font-bold mb-4 text-[#0a0a4a]">Product Not Found</h1>
           <p className="text-gray-600">The product you are looking for does not exist.</p>
         </div>
         <Footer />
@@ -60,31 +157,45 @@ export function ProductDetailPage() {
     );
   }
 
+  const mainImageUrl = selectedImage?.url || product.images?.[0]?.url || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
+  const mainImageAltText = selectedImage?.altText || product.name || 'Product Image';
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      
-      <main>
-        <div className="lumicea-container py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Product Images - Updated to use the 'images' column */}
+      <main className="flex-grow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+          {/* Breadcrumbs */}
+          <nav className="mb-4 text-sm text-gray-500 flex items-center space-x-2">
+            <Link to="/" className="hover:underline">Home</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link to={`/categories/${product.slug}`} className="hover:underline">Category</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span>{product.name}</span>
+          </nav>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+            {/* Product Images */}
             <div>
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
+              <div className="aspect-square bg-white rounded-lg overflow-hidden border border-gray-200 mb-4 shadow-sm">
                 <img
-                  src={product.images?.[0] || 'https://via.placeholder.com/800'}
-                  alt={product.name || 'Product Image'}
-                  className="w-full h-full object-cover"
+                  src={mainImageUrl}
+                  alt={mainImageAltText}
+                  className="w-full h-full object-contain p-4"
                 />
               </div>
-              {/* This section now maps through the 'images' array for thumbnails */}
               {product.images?.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
                   {product.images.map((image, index) => (
-                    <div key={index} className="aspect-square bg-gray-100 rounded-md overflow-hidden">
+                    <div 
+                      key={image.id} 
+                      className={`aspect-square bg-white rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 border-2 ${selectedImage?.id === image.id ? 'border-[#ddb866]' : 'border-transparent'}`}
+                      onClick={() => setSelectedImage(image)}
+                    >
                       <img
-                        src={image}
-                        alt={`${product.name} view ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        src={image.url}
+                        alt={image.altText}
+                        className="w-full h-full object-contain p-2"
                       />
                     </div>
                   ))}
@@ -92,64 +203,174 @@ export function ProductDetailPage() {
               )}
             </div>
 
-            {/* Product Details - Now uses dynamic data from your columns */}
+            {/* Product Details */}
             <div className="space-y-6">
-              <div>
-                {/* Category data needs to be fetched separately if not included in this query */}
-                {product.category_id && <Badge variant="secondary" className="mb-2">Category</Badge>}
-                
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <h1 className="text-3xl sm:text-4xl font-bold text-[#0a0a4a]">
                   {product.name}
                 </h1>
-                
-                <p className="text-gray-700 leading-relaxed">
-                  {product.short_description || product.description}
-                </p>
+                <div className="text-2xl sm:text-3xl font-bold text-[#ddb866] mt-2 sm:mt-0">
+                  £{calculatedPrice.toFixed(2)}
+                </div>
               </div>
 
-              <div className="text-3xl font-bold text-gray-900">
-                £{product.base_price?.toFixed(2) || '0.00'}
-              </div>
+              <div className="text-gray-700 leading-relaxed [&_p]:my-4 [&_p]:leading-loose" dangerouslySetInnerHTML={{ __html: product.description }}></div>
 
               {/* Variant Selects */}
               <div className="space-y-4">
-                {/* This will require more complex logic to dynamically render based on customization_options */}
-                {/* For example:
-                {product.customization_options?.materials && (
-                  <div>
-                    <Label className="text-sm font-medium">Material</Label>
-                    <select className="...">
-                      {product.customization_options.materials.map(mat => <option key={mat}>{mat}</option>)}
-                    </select>
+                {product.variants.length > 0 && product.variants.map((variant) => (
+                  <div key={variant.id}>
+                    <Label htmlFor={variant.id} className="text-sm font-medium text-gray-700">{variant.name}</Label>
+                    <Select onValueChange={(value) => handleVariantSelect(variant.id, value)} value={selectedVariants[variant.id] || ''}>
+                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md">
+                        <SelectValue placeholder={`Select a ${variant.name}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {variant.options.map(option => (
+                          <SelectItem key={option.id} value={option.id}>
+                            {option.name} {option.price_change > 0 && `(+£${option.price_change.toFixed(2)})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-                */}
+                ))}
               </div>
 
-              <div className="flex space-x-3">
-                <Button className="flex-1 lumicea-button-primary">
+              {/* Quantity and Actions */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="quantity" className="text-gray-700">Qty</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={selectedQuantity}
+                    onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    min="1"
+                    className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md"
+                  />
+                </div>
+                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300">
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   Add to Cart
                 </Button>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors">
                   <Heart className="h-5 w-5" />
                 </Button>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Product Features</h4>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>• SKU: {product.sku}</li>
-                  {product.materials && <li>• Materials: {product.materials}</li>}
-                  {product.care_instructions && <li>• Care Instructions: {product.care_instructions}</li>}
-                </ul>
+              {/* Product Features & Info */}
+              <div className="bg-gray-100 rounded-lg p-6 space-y-3 shadow-inner">
+                <div className="text-[#0a0a4a] font-medium text-lg">Product Features</div>
+                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: product.features }}></div>
               </div>
+
+              {/* Personalisation and Social */}
+              <div className="flex items-center justify-between mt-4">
+                <Button variant="ghost" className="text-[#0a0a4a] hover:bg-transparent hover:underline" onClick={() => setShowPersonalisationModal(true)}>
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Interested in personalising?
+                </Button>
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-500 text-sm">Share:</span>
+                  <Button variant="ghost" size="icon"><Twitter className="h-4 w-4 text-gray-500 hover:text-blue-400" /></Button>
+                  <Button variant="ghost" size="icon"><Facebook className="h-4 w-4 text-gray-500 hover:text-blue-600" /></Button>
+                  <Button variant="ghost" size="icon"><Mail className="h-4 w-4 text-gray-500 hover:text-gray-700" /></Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabbed Section */}
+          <div className="mt-16">
+            <div className="flex border-b border-gray-200">
+              <button 
+                className={`${TAB_BUTTON_STYLE} ${activeTab === 'description' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
+                onClick={() => setActiveTab('description')}
+              >
+                Description
+              </button>
+              <button 
+                className={`${TAB_BUTTON_STYLE} ${activeTab === 'reviews' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
+                onClick={() => setActiveTab('reviews')}
+              >
+                Reviews
+              </button>
+              <button 
+                className={`${TAB_BUTTON_STYLE} ${activeTab === 'shipping' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
+                onClick={() => setActiveTab('shipping')}
+              >
+                Shipping
+              </button>
+            </div>
+            <div className="bg-white p-6 rounded-b-lg border border-gray-200">
+              {activeTab === 'description' && (
+                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: product.description }}></div>
+              )}
+              {activeTab === 'reviews' && (
+                <div>
+                  <h3 className="font-semibold text-lg text-[#0a0a4a]">Customer Reviews</h3>
+                  <p className="text-sm text-gray-500 mt-2">No reviews for this product yet. Be the first!</p>
+                  {/* Reviews will be dynamically populated here */}
+                </div>
+              )}
+              {activeTab === 'shipping' && (
+                <div className="text-gray-700 leading-relaxed">
+                  <p>All orders are processed within 1-2 business days. Shipping times vary based on location.</p>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>UK Standard Shipping: 3-5 business days</li>
+                    <li>International Shipping: 7-14 business days</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Recommended Products */}
+          <div className="mt-16">
+            <h2 className="text-3xl font-bold text-[#0a0a4a] mb-6">You Might Also Like</h2>
+            {/* Placeholder for product carousel. We will build this in a future step. */}
+            <div className="flex space-x-4 overflow-x-auto p-2">
+              <div className="w-64 h-64 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-sm text-gray-500">Placeholder</div>
+              <div className="w-64 h-64 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-sm text-gray-500">Placeholder</div>
+              <div className="w-64 h-64 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-sm text-gray-500">Placeholder</div>
             </div>
           </div>
         </div>
       </main>
-      
       <Footer />
+
+      {/* Personalisation Modal */}
+      <Dialog open={showPersonalisationModal} onOpenChange={setShowPersonalisationModal}>
+        <DialogContent className="sm:max-w-[425px] rounded-lg shadow-lg">
+          <DialogHeader>
+            <DialogTitle>Personalise this Product</DialogTitle>
+            <DialogDescription>
+              Let us know how we can create your dream piece.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePersonalisationSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Your Name</Label>
+              <Input id="name" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Your Email</Label>
+              <Input id="email" type="email" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="message">Your Message</Label>
+              <Textarea id="message" required />
+            </div>
+            {/* Hidden inputs to pass product details */}
+            <input type="hidden" name="product_url" value={window.location.href} />
+            <input type="hidden" name="sku" value={`${product.sku_prefix}-${Object.values(selectedVariants).join('-')}`} />
+            <DialogFooter>
+              <Button type="submit">Send Message</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
