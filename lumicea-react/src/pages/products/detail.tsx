@@ -12,32 +12,39 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 
+// Define the shape of a single image
 interface ProductImage {
   id: string;
   url: string;
   altText: string;
   isMain: boolean;
-  variantId?: string;
+  variantOptionId?: string; // Optional field to link to a specific variant option
 }
 
+// Define the shape of a single product variant option
 interface VariantOption {
   id: string;
   name: string;
   price_change: number;
+  is_sold_out: boolean;
 }
 
+// Define the shape of a single product variant master section
 interface ProductVariant {
   id: string;
   name: string;
   options: VariantOption[];
 }
 
+// Define the shape of our full product data
 interface Product {
   id?: string;
   name: string;
   slug: string;
   sku_prefix: string;
   base_price: number;
+  quantity?: number;
+  is_made_to_order: boolean;
   description: string;
   features: string;
   is_active: boolean;
@@ -45,6 +52,7 @@ interface Product {
   images: ProductImage[];
   variants: ProductVariant[];
   tags: string[];
+  categories: string[];
 }
 
 const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors";
@@ -81,9 +89,10 @@ export function ProductDetailPage() {
       } else if (data) {
         const parsedProduct = {
           ...data,
-          images: JSON.parse(data.images),
-          variants: JSON.parse(data.variants),
-          tags: JSON.parse(data.tags),
+          images: data.images ? JSON.parse(data.images) : [],
+          variants: data.variants ? JSON.parse(data.variants) : [],
+          tags: data.tags ? JSON.parse(data.tags) : [],
+          categories: data.categories ? JSON.parse(data.categories) : [],
         };
         setProduct(parsedProduct);
         if (parsedProduct.images && parsedProduct.images.length > 0) {
@@ -117,21 +126,14 @@ export function ProductDetailPage() {
   const handleVariantSelect = (variantId: string, optionId: string) => {
     setSelectedVariants(prev => ({ ...prev, [variantId]: optionId }));
     if (product) {
-        const selectedOption = product.variants.find(v => v.id === variantId)?.options.find(o => o.id === optionId);
-        if (selectedOption) {
-            const variantSpecificImage = product.images.find(img => img.variantId === selectedOption.id);
-            if (variantSpecificImage) {
-                setSelectedImage(variantSpecificImage);
-            }
-        }
+        const variantSpecificImage = product.images.find(img => img.variantOptionId === optionId);
+        const mainImage = product.images.find(img => img.isMain) || product.images[0];
+        setSelectedImage(variantSpecificImage || mainImage || null);
     }
   };
 
   const handlePersonalisationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Logic for sending the personalisation message.
-    // We would fetch the form data here, including the hidden fields for URL and SKU,
-    // and send it to an API endpoint.
     console.log("Personalisation request submitted.");
     setShowPersonalisationModal(false);
   };
@@ -157,11 +159,13 @@ export function ProductDetailPage() {
     );
   }
 
-  const mainImageUrl = selectedImage?.url || product.images?.[0]?.url || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
+  const mainImageUrl = selectedImage?.url || product.images?.find(img => img.isMain)?.url || product.images?.[0]?.url || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
   const mainImageAltText = selectedImage?.altText || product.name || 'Product Image';
 
+  const displayedImages = product.images.filter(img => img.isMain || img.variantOptionId === selectedImage?.variantOptionId);
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
       <Header />
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
@@ -169,7 +173,7 @@ export function ProductDetailPage() {
           <nav className="mb-4 text-sm text-gray-500 flex items-center space-x-2">
             <Link to="/" className="hover:underline">Home</Link>
             <ChevronRight className="h-3 w-3" />
-            <Link to={`/categories/${product.slug}`} className="hover:underline">Category</Link>
+            <span className="capitalize">{product.categories[0] || 'Uncategorised'}</span>
             <ChevronRight className="h-3 w-3" />
             <span>{product.name}</span>
           </nav>
@@ -184,11 +188,11 @@ export function ProductDetailPage() {
                   className="w-full h-full object-contain p-4"
                 />
               </div>
-              {product.images?.length > 1 && (
+              {displayedImages.length > 1 && (
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                  {product.images.map((image, index) => (
-                    <div 
-                      key={image.id} 
+                  {displayedImages.map((image) => (
+                    <div
+                      key={image.id}
                       className={`aspect-square bg-white rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 border-2 ${selectedImage?.id === image.id ? 'border-[#ddb866]' : 'border-transparent'}`}
                       onClick={() => setSelectedImage(image)}
                     >
@@ -214,6 +218,12 @@ export function ProductDetailPage() {
                 </div>
               </div>
 
+              {product.is_made_to_order ? (
+                <Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold">Made to Order</Badge>
+              ) : (
+                <p className="text-sm text-gray-500">In stock: {product.quantity}</p>
+              )}
+
               <div className="text-gray-700 leading-relaxed [&_p]:my-4 [&_p]:leading-loose" dangerouslySetInnerHTML={{ __html: product.description }}></div>
 
               {/* Variant Selects */}
@@ -227,8 +237,12 @@ export function ProductDetailPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {variant.options.map(option => (
-                          <SelectItem key={option.id} value={option.id}>
-                            {option.name} {option.price_change > 0 && `(+£${option.price_change.toFixed(2)})`}
+                          <SelectItem key={option.id} value={option.id} disabled={option.is_sold_out}>
+                            {option.name}
+                            {option.is_sold_out && <span className="ml-2 text-red-500">(Sold out)</span>}
+                            {option.price_change !== 0 && !option.is_sold_out && (
+                              <span className="ml-2 text-gray-500">({option.price_change > 0 ? '+' : ''}£{option.price_change.toFixed(2)})</span>
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -248,13 +262,14 @@ export function ProductDetailPage() {
                     onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     min="1"
                     className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md"
+                    disabled={product.is_made_to_order}
                   />
                 </div>
-                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300">
+                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md">
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   Add to Cart
                 </Button>
-                <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors">
+                <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md">
                   <Heart className="h-5 w-5" />
                 </Button>
               </div>
@@ -265,6 +280,13 @@ export function ProductDetailPage() {
                 <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: product.features }}></div>
               </div>
 
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mt-4">
+                {product.tags.map((tag, index) => (
+                  <Badge key={index} className="bg-gray-200 text-gray-700 rounded-full">{tag}</Badge>
+                ))}
+              </div>
+              
               {/* Personalisation and Social */}
               <div className="flex items-center justify-between mt-4">
                 <Button variant="ghost" className="text-[#0a0a4a] hover:bg-transparent hover:underline" onClick={() => setShowPersonalisationModal(true)}>
