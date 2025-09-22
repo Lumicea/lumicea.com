@@ -769,4 +769,4 @@ const ProductEditor = () => {
   );
 };
 
-export default ProductEditor;
+export ProductEditor;
