@@ -1,8 +1,6 @@
 // src/lib/admin-utils.ts
 
 import { supabase } from './supabase';
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
 // Function to check if user is admin
 export async function isUserAdmin(): Promise<boolean> {
@@ -485,22 +483,6 @@ export async function updateSystemSetting(category: string, key: string, value: 
     console.error('Error updating system setting:', error);
     throw error;
   }
-}
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-export function slugify(text: string) {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w-]+/g, '') // Remove all non-word chars
-    .replace(/--+/g, '-') // Replace multiple - with single -
-    .replace(/^-+/, '') // Trim - from start of text
-    .replace(/-+$/, ''); // Trim - from end of text
 }
 
 // Function to fetch analytics data
