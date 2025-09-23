@@ -39,6 +39,17 @@ export function ProductDetailPage() {
   const [personalisationEmail, setPersonalisationEmail] = useState('');
   const [personalisationMessage, setPersonalisationMessage] = useState('');
 
+  // Helper function to safely get the numeric value from a jsonb price_change
+  const getPriceChangeValue = (priceChange) => {
+    if (typeof priceChange === 'number') {
+      return priceChange;
+    }
+    if (priceChange && typeof priceChange === 'object' && priceChange.amount !== undefined) {
+      return priceChange.amount;
+    }
+    return 0;
+  };
+
   useEffect(() => {
     async function fetchProduct() {
       if (!slug) {
@@ -55,7 +66,7 @@ export function ProductDetailPage() {
           variants:product_variants (
             id, name,
             options:variant_options (
-              id, name, price_change, is_sold_out, image_id
+              id, option_name, price_change, is_sold_out, image_id
             )
           ),
           tags:product_tags!product_tags_product_id_fkey (
@@ -129,7 +140,7 @@ export function ProductDetailPage() {
         if (selectedOptionId) {
           const selectedOption = variant.options.find(opt => opt.id === selectedOptionId);
           if (selectedOption) {
-            newPrice += selectedOption.price_change;
+            newPrice += getPriceChangeValue(selectedOption.price_change);
           }
         }
       });
@@ -252,10 +263,10 @@ export function ProductDetailPage() {
                       <SelectContent>
                         {variant.options.map(option => (
                           <SelectItem key={option.id} value={option.id} disabled={option.is_sold_out}>
-                            {option.name}
+                            {option.option_name}
                             {option.is_sold_out && <span className="ml-2 text-red-500">(Sold out)</span>}
-                            {option.price_change !== 0 && !option.is_sold_out && (
-                              <span className="ml-2 text-gray-500">({option.price_change > 0 ? '+' : ''}£{option.price_change.toFixed(2)})</span>
+                            {getPriceChangeValue(option.price_change) !== 0 && !option.is_sold_out && (
+                              <span className="ml-2 text-gray-500">({getPriceChangeValue(option.price_change) > 0 ? '+' : ''}£{getPriceChangeValue(option.price_change).toFixed(2)})</span>
                             )}
                           </SelectItem>
                         ))}
