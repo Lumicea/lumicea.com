@@ -57,7 +57,8 @@ export function ProductDetailPage() {
               id, name, price_change, is_sold_out, image_id
             )
           ),
-          tags:product_tags!product_id (
+          // Using the foreign key constraint name to resolve ambiguity
+          tags:product_tags!product_tags_product_id_fkey (
             tag:tags (
               name
             )
