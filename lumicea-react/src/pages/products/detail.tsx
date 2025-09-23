@@ -15,58 +15,11 @@ import { Textarea } from '@/components/ui/textarea';
 // Helper function to sanitize HTML content without a library
 // WARNING: This is a basic function and is not a comprehensive security solution.
 // For a production app, a robust sanitization library like DOMPurify is recommended.
-const sanitizeHtml = (html: string) => {
+const sanitizeHtml = (html) => {
   if (typeof html !== 'string') return '';
   const scriptRegex = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
   return html.replace(scriptRegex, '');
 };
-
-// Define the shape of a single image
-interface ProductImage {
-  id: string;
-  url: string;
-  altText: string;
-  isMain: boolean;
-  variantOptionId?: string; // Optional field to link to a specific variant option
-}
-
-// Define the shape of a single product variant option
-interface VariantOption {
-  id: string;
-  name: string;
-  price_change: number;
-  is_sold_out: boolean;
-}
-
-// Define the shape of a single product variant master section
-interface ProductVariant {
-  id: string;
-  name: string;
-  options: VariantOption[];
-}
-
-// Define the shape of our full product data
-interface Product {
-  id?: string;
-  name: string;
-  slug: string;
-  sku_prefix: string;
-  base_price: number;
-  quantity?: number;
-  is_made_to_order: boolean;
-  description: string;
-  features: string;
-  is_active: boolean;
-  is_featured: boolean;
-  images: ProductImage[];
-  variants: ProductVariant[];
-  tags: string[];
-  categories: string[];
-  // Added new fields for dynamic tab content
-  shipping_info: string;
-  processing_times: string;
-  size_guide: string;
-}
 
 const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors";
 const TAB_BUTTON_ACTIVE_STYLE = "bg-white text-[#0a0a4a] border-b-2 border-[#ddb866]";
@@ -74,14 +27,17 @@ const TAB_BUTTON_INACTIVE_STYLE = "bg-gray-100 text-gray-600 hover:bg-gray-200";
 
 export function ProductDetailPage() {
   const { slug } = useParams();
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: string }>({});
+  const [selectedVariants, setSelectedVariants] = useState({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
-  const [selectedImage, setSelectedImage] = useState<ProductImage | null>(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showPersonalisationModal, setShowPersonalisationModal] = useState(false);
+  const [personalisationName, setPersonalisationName] = useState('');
+  const [personalisationEmail, setPersonalisationEmail] = useState('');
+  const [personalisationMessage, setPersonalisationMessage] = useState('');
 
   useEffect(() => {
     async function fetchProduct() {
@@ -90,18 +46,22 @@ export function ProductDetailPage() {
         return;
       }
 
-      // Updated the select query to include new fields for tabs
       const { data, error } = await supabase
         .from('products')
         .select(`
-          *,
-          images,
-          variants,
-          tags,
-          categories,
-          shipping_info,
-          processing_times,
-          size_guide
+          id, name, slug, sku_prefix, base_price, categories, is_made_to_order, quantity, description, features, shipping_info, processing_times, size_guide,
+          images:product_images(*),
+          variants:product_variants (
+            id, name,
+            options:variant_options (
+              id, name, price_change, is_sold_out, image_id
+            )
+          ),
+          tags:product_tags (
+            tag:tags (
+              name
+            )
+          )
         `)
         .eq('slug', slug)
         .single();
@@ -110,22 +70,30 @@ export function ProductDetailPage() {
         console.error('Error fetching product:', error.message);
         setProduct(null);
       } else if (data) {
-        const parsedProduct: Product = {
+        // Transform the fetched data to match the expected format
+        const transformedProduct = {
           ...data,
-          images: data.images ? JSON.parse(data.images) : [],
-          variants: data.variants ? JSON.parse(data.variants) : [],
-          tags: data.tags ? JSON.parse(data.tags) : [],
-          categories: data.categories ? JSON.parse(data.categories) : [],
-          shipping_info: data.shipping_info || '',
-          processing_times: data.processing_times || '',
-          size_guide: data.size_guide || '',
+          tags: data.tags.map(t => t.tag.name),
+          images: data.images.map(img => ({
+            ...img,
+            altText: img.altText || data.name,
+            isMain: img.is_main // assuming is_main is the column name
+          })),
+          variants: data.variants.map(v => ({
+            ...v,
+            options: v.options.map(o => ({
+              ...o,
+              is_sold_out: o.is_sold_out // assuming is_sold_out is the column name
+            }))
+          }))
         };
-        setProduct(parsedProduct);
-        if (parsedProduct.images && parsedProduct.images.length > 0) {
-          const mainImage = parsedProduct.images.find(img => img.isMain) || parsedProduct.images[0];
+        
+        setProduct(transformedProduct);
+        if (transformedProduct.images && transformedProduct.images.length > 0) {
+          const mainImage = transformedProduct.images.find(img => img.isMain) || transformedProduct.images[0];
           setSelectedImage(mainImage);
         }
-        setCalculatedPrice(parsedProduct.base_price);
+        setCalculatedPrice(transformedProduct.base_price);
       }
       setLoading(false);
     }
@@ -149,7 +117,7 @@ export function ProductDetailPage() {
     }
   }, [selectedVariants, product]);
 
-  const handleVariantSelect = (variantId: string, optionId: string) => {
+  const handleVariantSelect = (variantId, optionId) => {
     setSelectedVariants(prev => ({ ...prev, [variantId]: optionId }));
     if (product) {
       const variantSpecificImage = product.images.find(img => img.variantOptionId === optionId);
@@ -158,7 +126,7 @@ export function ProductDetailPage() {
     }
   };
 
-  const handlePersonalisationSubmit = (e: React.FormEvent) => {
+  const handlePersonalisationSubmit = (e) => {
     e.preventDefault();
     console.log("Personalisation request submitted.");
     setShowPersonalisationModal(false);
@@ -280,7 +248,7 @@ export function ProductDetailPage() {
               {/* Quantity and Actions */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity" className="text-gray-700">Qty</Label>
+                  <Label htmlFor="quantity">Qty</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -383,8 +351,8 @@ export function ProductDetailPage() {
               {activeTab === 'reviews' && (
                 <div>
                   <h3 className="font-semibold text-lg text-[#0a0a4a]">Customer Reviews</h3>
-                  <p className="text-sm text-gray-500 mt-2">No reviews for this product yet. Be the first!</p>
                   {/* Reviews will be dynamically populated here */}
+                  <p className="text-sm text-gray-500 mt-2">No reviews for this product yet. Be the first!</p>
                 </div>
               )}
               {activeTab === 'shipping' && (
