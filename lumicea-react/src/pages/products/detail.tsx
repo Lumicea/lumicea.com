@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { gaugeThicknessData, insideDiameterData } from '../sizeGuideData';
 
 // Helper function to sanitize HTML content without a library
 // WARNING: This is a basic function and is not a comprehensive security solution.
@@ -61,7 +62,7 @@ export function ProductDetailPage() {
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, size_guide, shipping_method_id,
+          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, shipping_method_id,
           images:product_images(*),
           variants:product_variants (
             id, name,
@@ -393,7 +394,74 @@ export function ProductDetailPage() {
                 <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>
               )}
               {activeTab === 'sizeGuide' && (
-                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.size_guide) }}></div>
+                <div className="space-y-8">
+                  {/* Gauge to MM Table */}
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2 text-[#0a0a4a]">General Piercing Thickness Guide</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Gauge (G) to Millimeter (MM) conversion.
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left table-auto">
+                        <thead>
+                          <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
+                            <th className="py-3 px-6 text-left">Gauge</th>
+                            <th className="py-3 px-6 text-left">Thickness (MM)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-gray-600 text-sm font-light">
+                          {gaugeThicknessData.map((item, index) => (
+                            <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                              <td className="py-3 px-6">{item.gauge}</td>
+                              <td className="py-3 px-6">{item.thickness}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Inside Diameter Table */}
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2 text-[#0a0a4a]">General Inside Diameter Guide</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Inside diameter measurements for a comfortable fit.
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left table-auto">
+                        <thead>
+                          <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
+                            <th className="py-3 px-6 text-left">Size (MM)</th>
+                            <th className="py-3 px-6 text-left">Size (Inches)</th>
+                            <th className="py-3 px-6 text-left">Comfort Level</th>
+                            <th className="py-3 px-6 text-left">Best For</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-gray-600 text-sm font-light">
+                          {insideDiameterData.map((size, index) => (
+                            <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                              <td className="py-3 px-6">{size.size}</td>
+                              <td className="py-3 px-6">{size.inches}</td>
+                              <td className="py-3 px-6">
+                                <Badge variant="outline" className={`
+                                  ${size.comfort === 'Snug' ? 'border-orange-500 text-orange-700' : ''}
+                                  ${size.comfort === 'Standard' ? 'border-blue-500 text-blue-700' : ''}
+                                  ${size.comfort === 'Comfortable' ? 'border-green-500 text-green-700' : ''}
+                                  ${size.comfort === 'Roomy' ? 'border-purple-500 text-purple-700' : ''}
+                                  ${size.comfort === 'Very Roomy' ? 'border-indigo-500 text-indigo-700' : ''}
+                                  ${size.comfort === 'Extra Roomy' ? 'border-pink-500 text-pink-700' : ''}
+                                `}>
+                                  {size.comfort}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-6">{size.bestFor}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
