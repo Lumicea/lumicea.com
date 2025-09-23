@@ -58,11 +58,11 @@ export function ProductDetailPage() {
         return;
       }
 
-      // Step 1: Fetch the product data, including the shipping_method_id
+      // Fetch product data, removing the nonexistent shipping_method_id column
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, shipping_method_id,
+          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times,
           images:product_images(*),
           variants:product_variants (
             id, name,
@@ -86,26 +86,9 @@ export function ProductDetailPage() {
         return;
       }
 
-      let shippingMethod = null;
-      if (data.shipping_method_id) {
-        // Step 2: Fetch the shipping method details using the ID from the product
-        const { data: shippingData, error: shippingError } = await supabase
-          .from('shipping_methods')
-          .select('*')
-          .eq('id', data.shipping_method_id)
-          .single();
-
-        if (shippingError) {
-          console.error('Error fetching shipping method:', shippingError.message);
-        } else {
-          shippingMethod = shippingData;
-        }
-      }
-
       // Combine all the data into a single product object
       const transformedProduct = {
         ...data,
-        shipping_method: shippingMethod,
         tags: data.tags.map(t => t.tag.name),
         images: data.images.map(img => ({
           ...img,
@@ -388,7 +371,10 @@ export function ProductDetailPage() {
                 </div>
               )}
               {activeTab === 'shipping' && (
-                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.shipping_method?.description || 'Shipping information is not available for this product.') }}></div>
+                <div className="text-gray-700 leading-relaxed">
+                  <p>Shipping information for this product is not available at this time.</p>
+                  <p>We are working to add more details about our shipping methods and timelines. Please check back soon!</p>
+                </div>
               )}
               {activeTab === 'processing' && (
                 <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>
