@@ -54,7 +54,7 @@ export function ProductDetailPage() {
           variants:product_variants (
             id, name,
             options:variant_options (
-              id, options_name, price_change, is_sold_out, image_id
+              id, option_name, price_change, is_sold_out, image_id
             )
           ),
           tags:product_tags!product_tags_product_id_fkey (
