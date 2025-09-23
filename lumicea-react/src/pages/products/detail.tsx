@@ -49,14 +49,15 @@ export function ProductDetailPage() {
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, slug, sku_prefix, base_price, category_id, is_made_to_order, quantity, description, features, shipping_info, processing_times, size_guide,
+          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, size_guide,
           images:product_images(*),
           variants:product_variants (
             id, name,
             options:variant_options (
-              id, option_name, price_change, is_sold_out, image_id
+              id, name, price_change, is_sold_out, image_id
             )
           ),
+          shipping_method:shipping_methods(*),
           tags:product_tags!product_tags_product_id_fkey (
             tag:tags (
               name
@@ -167,7 +168,7 @@ export function ProductDetailPage() {
           <nav className="mb-4 text-sm text-gray-500 flex items-center space-x-2">
             <Link to="/" className="hover:underline">Home</Link>
             <ChevronRight className="h-3 w-3" />
-            <span className="capitalize">{product.categories[0] || 'Uncategorised'}</span>
+            <span className="capitalize">{product.tags[0] || 'Uncategorised'}</span>
             <ChevronRight className="h-3 w-3" />
             <span>{product.name}</span>
           </nav>
@@ -356,7 +357,7 @@ export function ProductDetailPage() {
                 </div>
               )}
               {activeTab === 'shipping' && (
-                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.shipping_info) }}></div>
+                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.shipping_method?.description || 'Shipping information is not available for this product.') }}></div>
               )}
               {activeTab === 'processing' && (
                 <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>
