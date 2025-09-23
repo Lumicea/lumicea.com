@@ -57,7 +57,7 @@ export function ProductDetailPage() {
               id, name, price_change, is_sold_out, image_id
             )
           ),
-          tags:product_tags (
+          tags:product_tags!product_id (
             tag:tags (
               name
             )
