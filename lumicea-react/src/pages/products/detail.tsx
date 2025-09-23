@@ -58,11 +58,13 @@ export function ProductDetailPage() {
         return;
       }
 
-      // Step 1: Fetch the product data, including the shipping_method_id
+      // Fetch the product data and directly join the shipping_methods table
+      // The join is done using the foreign key relationship defined in the Supabase schema
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, shipping_method_id,
+          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times,
+          shipping_method:shipping_methods!products_shipping_method_id_fkey(*),
           images:product_images(*),
           variants:product_variants (
             id, name,
@@ -86,37 +88,20 @@ export function ProductDetailPage() {
         return;
       }
 
-      let shippingMethod = null;
-      if (data.shipping_method_id) {
-        // Step 2: Fetch the shipping method details using the ID from the product
-        const { data: shippingData, error: shippingError } = await supabase
-          .from('shipping_methods')
-          .select('*')
-          .eq('id', data.shipping_method_id)
-          .single();
-
-        if (shippingError) {
-          console.error('Error fetching shipping method:', shippingError.message);
-        } else {
-          shippingMethod = shippingData;
-        }
-      }
-
       // Combine all the data into a single product object
       const transformedProduct = {
         ...data,
-        shipping_method: shippingMethod,
         tags: data.tags.map(t => t.tag.name),
         images: data.images.map(img => ({
           ...img,
           altText: img.altText || data.name,
-          isMain: img.is_main // assuming is_main is the column name
+          isMain: img.is_main
         })),
         variants: data.variants.map(v => ({
           ...v,
           options: v.options.map(o => ({
             ...o,
-            is_sold_out: o.is_sold_out // assuming is_sold_out is the column name
+            is_sold_out: o.is_sold_out
           }))
         }))
       };
@@ -488,7 +473,7 @@ export function ProductDetailPage() {
             <DialogDescription>
               Let us know how we can create your dream piece.
             </DialogDescription>
-          </DialogHeader>
+            </DialogHeader>
           <form onSubmit={handlePersonalisationSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Your Name</Label>
