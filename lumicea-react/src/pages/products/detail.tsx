@@ -49,7 +49,7 @@ export function ProductDetailPage() {
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, slug, sku_prefix, base_price, categories, is_made_to_order, quantity, description, features, shipping_info, processing_times, size_guide,
+          id, name, slug, sku_prefix, base_price, category_id, is_made_to_order, quantity, description, features, shipping_info, processing_times, size_guide,
           images:product_images(*),
           variants:product_variants (
             id, name,
