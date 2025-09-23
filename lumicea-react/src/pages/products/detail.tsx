@@ -46,10 +46,11 @@ export function ProductDetailPage() {
         return;
       }
 
+      // Step 1: Fetch the product data, including the shipping_method_id
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, size_guide,
+          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times, size_guide, shipping_method_id,
           images:product_images(*),
           variants:product_variants (
             id, name,
@@ -57,7 +58,6 @@ export function ProductDetailPage() {
               id, name, price_change, is_sold_out, image_id
             )
           ),
-          shipping_method:shipping_methods(*),
           tags:product_tags!product_tags_product_id_fkey (
             tag:tags (
               name
@@ -70,32 +70,51 @@ export function ProductDetailPage() {
       if (error) {
         console.error('Error fetching product:', error.message);
         setProduct(null);
-      } else if (data) {
-        // Transform the fetched data to match the expected format
-        const transformedProduct = {
-          ...data,
-          tags: data.tags.map(t => t.tag.name),
-          images: data.images.map(img => ({
-            ...img,
-            altText: img.altText || data.name,
-            isMain: img.is_main // assuming is_main is the column name
-          })),
-          variants: data.variants.map(v => ({
-            ...v,
-            options: v.options.map(o => ({
-              ...o,
-              is_sold_out: o.is_sold_out // assuming is_sold_out is the column name
-            }))
-          }))
-        };
-        
-        setProduct(transformedProduct);
-        if (transformedProduct.images && transformedProduct.images.length > 0) {
-          const mainImage = transformedProduct.images.find(img => img.isMain) || transformedProduct.images[0];
-          setSelectedImage(mainImage);
-        }
-        setCalculatedPrice(transformedProduct.base_price);
+        setLoading(false);
+        return;
       }
+
+      let shippingMethod = null;
+      if (data.shipping_method_id) {
+        // Step 2: Fetch the shipping method details using the ID from the product
+        const { data: shippingData, error: shippingError } = await supabase
+          .from('shipping_methods')
+          .select('*')
+          .eq('id', data.shipping_method_id)
+          .single();
+
+        if (shippingError) {
+          console.error('Error fetching shipping method:', shippingError.message);
+        } else {
+          shippingMethod = shippingData;
+        }
+      }
+
+      // Combine all the data into a single product object
+      const transformedProduct = {
+        ...data,
+        shipping_method: shippingMethod,
+        tags: data.tags.map(t => t.tag.name),
+        images: data.images.map(img => ({
+          ...img,
+          altText: img.altText || data.name,
+          isMain: img.is_main // assuming is_main is the column name
+        })),
+        variants: data.variants.map(v => ({
+          ...v,
+          options: v.options.map(o => ({
+            ...o,
+            is_sold_out: o.is_sold_out // assuming is_sold_out is the column name
+          }))
+        }))
+      };
+      
+      setProduct(transformedProduct);
+      if (transformedProduct.images && transformedProduct.images.length > 0) {
+        const mainImage = transformedProduct.images.find(img => img.isMain) || transformedProduct.images[0];
+        setSelectedImage(mainImage);
+      }
+      setCalculatedPrice(transformedProduct.base_price);
       setLoading(false);
     }
 
