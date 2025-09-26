@@ -289,7 +289,7 @@ const ProductEditor = () => {
     const newProduct = {
       ...product,
       id: uuidv4(),
-      title: `${product.title} (Copy)`,
+      title: `${product.name} (Copy)`,
       created_at: new Date(),
       updated_at: new Date(),
       is_active: false,
