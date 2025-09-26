@@ -96,7 +96,7 @@ const ProductEditor = () => {
       } else {
         setProduct({
           id: uuidv4(),
-          title: '',
+          name: '',
           description: '',
           price: 0,
           category: '',
@@ -319,7 +319,7 @@ const ProductEditor = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!product || !product.title || !product.description) {
+    if (!product || !product.name || !product.description) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -395,7 +395,7 @@ const ProductEditor = () => {
               <Input
                 id="title"
                 name="title"
-                value={product.title}
+                value={product.name}
                 onChange={handleChange}
                 className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               />
