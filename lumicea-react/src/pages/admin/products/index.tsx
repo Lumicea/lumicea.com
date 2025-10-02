@@ -1,40 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AdminProductsListPage } from './list';
 import { ProductEditor } from './editor';
+import { useParams } from 'react-router-dom';
 
 /**
  * AdminProductsPage is the main controller for the product admin section.
- * It manages the view state to switch between the product list and the product editor.
+ * It uses the URL to determine whether to show the list or the editor.
  */
 export function AdminProductsPage() {
-  // State to hold the ID of the product being edited. Null for a new product.
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  // State to determine which view to display: 'list' or 'editor'
-  const [view, setView] = useState<'list' | 'editor'>('list');
+  const { id } = useParams<{ id: string }>();
 
-  // Callback to switch to the editor view with a specific product ID
-  const handleEditProduct = (productId: string) => {
-    setEditingProductId(productId);
-    setView('editor');
-  };
-
-  // Callback to switch to the editor view for a new product
-  const handleAddProduct = () => {
-    setEditingProductId(null);
-    setView('editor');
-  };
-
-  // Callback to return to the list view, resetting the editing ID
-  const handleBackToList = () => {
-    setView('list');
-    setEditingProductId(null);
-  };
-
-  // Render the appropriate component based on the current view state
-  if (view === 'editor') {
-    return <ProductEditor productId={editingProductId} onBack={handleBackToList} />;
+  // Check if the current URL path indicates creating a new product
+  const isCreating = window.location.pathname.endsWith('/admin/products/new');
+  
+  // If there's an ID in the URL (editing) or if we are on the 'new' path (creating), show the editor.
+  if (id || isCreating) {
+    return <ProductEditor />;
   }
 
-  // Default view is the product list
-  return <AdminProductsListPage onAdd={handleAddProduct} onEdit={handleEditProduct} />;
+  // Otherwise, show the product list.
+  return <AdminProductsListPage />;
 }
