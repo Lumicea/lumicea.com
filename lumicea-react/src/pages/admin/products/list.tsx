@@ -1,103 +1,135 @@
-import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { PlusCircle, Eye, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Product {
   id: string;
   name: string;
-  sku_prefix: string;
+  slug: string;
   base_price: number;
   is_active: boolean;
-  is_featured: boolean;
-  created_at: string;
   quantity: number | null;
+  is_featured: boolean;
+  sku_prefix: string | null;
 }
 
 export function AdminProductsListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const getProducts = async () => {
+    const fetchProducts = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku_prefix, base_price, is_active, is_featured, created_at, quantity');
-      
+        .select('id, name, slug, base_price, is_active, quantity, is_featured, sku_prefix')
+        .order('created_at', { ascending: false });
+
       if (error) {
-        toast.error('Failed to fetch products.');
-        console.error('Failed to fetch products:', error);
+        toast.error("Failed to fetch products.");
+        console.error(error);
       } else {
-        setProducts(data || []);
+        setProducts(data as Product[]);
       }
       setLoading(false);
     };
-    getProducts();
+    fetchProducts();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lumicea-navy"></div>
-      </div>
-    );
-  }
+  const filteredProducts = useMemo(() =>
+    products.filter(product =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.sku_prefix && product.sku_prefix.toLowerCase().includes(searchTerm.toLowerCase()))
+    ), [products, searchTerm]);
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Products</h1>
         <Link to="/admin/products/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
+          <Button style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Product
           </Button>
         </Link>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
-              <tr key={product.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.sku_prefix}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(product.base_price)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.quantity ?? 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {product.is_active ? 'Active' : 'Draft'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link to={`/admin/products/${product.id}`}>
-                    <Button variant="ghost" size="sm">
-                      <Pencil className="h-4 w-4 text-blue-500" />
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" size="sm" onClick={() => { /* Add delete logic here */ }}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mb-4 relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <Input
+          placeholder="Search by product name or SKU..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9"
+        />
       </div>
+
+      <Card className="shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product Name</TableHead>
+              <TableHead>SKU Prefix</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Inventory</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow><TableCell colSpan={6} className="text-center h-24">Loading products...</TableCell></TableRow>
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">
+                    <Link to={`/admin/products/${product.id}`} className="hover:underline text-lumicea-navy">
+                      {product.name}
+                    </Link>
+                    {product.is_featured && <Badge className="ml-2 bg-lumicea-gold text-lumicea-navy">Featured</Badge>}
+                  </TableCell>
+                  <TableCell className="text-gray-500">{product.sku_prefix || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge variant={product.is_active ? 'default' : 'destructive'} className={product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {product.is_active ? 'Active' : 'Archived'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>£{product.base_price.toFixed(2)}</TableCell>
+                  <TableCell>{product.quantity ?? 'Made to order'}</TableCell>
+                  <TableCell className="text-right">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                           <a href={`/products/${product.slug}`} target="_blank" rel="noopener noreferrer">
+                             <Button variant="ghost" size="icon">
+                               <Eye className="h-4 w-4 text-gray-500 hover:text-lumicea-navy" />
+                             </Button>
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>View on site (new tab)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                     <Link to={`/admin/products/${product.id}`}>
+                      <Button variant="outline" size="sm">Edit</Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow><TableCell colSpan={6} className="text-center h-24">No products found matching your search.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
-}
+};
