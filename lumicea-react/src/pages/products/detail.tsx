@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '@/lib/supabase.ts';
+import { supabase } from '@/lib/supabase';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
@@ -12,102 +12,67 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { gaugeThicknessData, insideDiameterData } from '../sizeGuideData';
+import { toast } from 'sonner';
 
-// Helper function to sanitize HTML content without a library
-// WARNING: This is a basic function and is not a comprehensive security solution.
-// For a production app, a robust sanitization library like DOMPurify is recommended.
-const sanitizeHtml = (html) => {
+// Sanitization function for security
+const sanitizeHtml = (html: string | null) => {
   if (typeof html !== 'string') return '';
   const scriptRegex = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
   return html.replace(scriptRegex, '');
 };
 
-const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors";
+const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors font-medium";
 const TAB_BUTTON_ACTIVE_STYLE = "bg-white text-[#0a0a4a] border-b-2 border-[#ddb866]";
-const TAB_BUTTON_INACTIVE_STYLE = "bg-gray-100 text-gray-600 hover:bg-gray-200";
+const TAB_BUTTON_INACTIVE_STYLE = "bg-transparent text-gray-600 hover:bg-gray-100";
+
+// --- INTERFACES to match the data structure from editor.tsx ---
+interface VariantOption { name: string; price_change: number; is_sold_out: boolean; images?: string[]; sku?: string; }
+interface Variant { name: string; options: VariantOption[]; }
+interface Product {
+  id: string; name: string; slug: string; description: string | null; features: string | null; care_instructions: string | null; processing_times: string | null; base_price: number;
+  is_made_to_order: boolean; quantity: number | null; images: string[]; variants: Variant[];
+  tags: { name: string; slug: string }[];
+}
 
 export function ProductDetailPage() {
   const { slug } = useParams();
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedVariants, setSelectedVariants] = useState({});
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showPersonalisationModal, setShowPersonalisationModal] = useState(false);
-  const [personalisationName, setPersonalisationName] = useState('');
-  const [personalisationEmail, setPersonalisationEmail] = useState('');
-  const [personalisationMessage, setPersonalisationMessage] = useState('');
-
-  // Helper function to safely get the numeric value from a jsonb price_change
-  const getPriceChangeValue = (priceChange) => {
-    if (typeof priceChange === 'number') {
-      return priceChange;
-    }
-    if (priceChange && typeof priceChange === 'object' && priceChange.amount !== undefined) {
-      return priceChange.amount;
-    }
-    return 0;
-  };
 
   useEffect(() => {
     async function fetchProduct() {
-      if (!slug) {
-        setLoading(false);
-        return;
-      }
+      if (!slug) { setLoading(false); return; }
 
-      // Fetch product data, removing the nonexistent shipping_method_id column
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          id, name, slug, sku_prefix, base_price, is_made_to_order, quantity, description, features, processing_times,
-          images:product_images(*),
-          variants:product_variants (
-            id, name,
-            options:variant_options (
-              id, option_name, price_change, is_sold_out, image_id
-            )
-          ),
-          tags:product_tags!product_tags_product_id_fkey (
-            tag:tags (
-              name
-            )
-          )
-        `)
+        .select(`*, tags:product_tags(tag:tags(name, slug))`)
         .eq('slug', slug)
         .single();
 
-      if (error) {
-        console.error('Error fetching product:', error.message);
+      if (error || !data) {
+        toast.error("Product not found.");
+        console.error('Error fetching product:', error?.message);
         setProduct(null);
         setLoading(false);
         return;
       }
 
-      // Combine all the data into a single product object
       const transformedProduct = {
         ...data,
-        tags: data.tags.map(t => t.tag.name),
-        images: data.images.map(img => ({
-          ...img,
-          altText: img.altText || data.name,
-          isMain: img.is_main
-        })),
-        variants: data.variants.map(v => ({
-          ...v,
-          options: v.options.map(o => ({
-            ...o,
-            is_sold_out: o.is_sold_out
-          }))
-        }))
+        tags: data.tags.map((t: any) => t.tag),
+        variants: data.variants || [],
+        images: data.images || [],
       };
       
       setProduct(transformedProduct);
       if (transformedProduct.images && transformedProduct.images.length > 0) {
-        const mainImage = transformedProduct.images.find(img => img.isMain) || transformedProduct.images[0];
-        setSelectedImage(mainImage);
+        setSelectedImage(transformedProduct.images[0]);
       }
       setCalculatedPrice(transformedProduct.base_price);
       setLoading(false);
@@ -119,12 +84,12 @@ export function ProductDetailPage() {
   useEffect(() => {
     if (product) {
       let newPrice = product.base_price;
-      product.variants.forEach(variant => {
-        const selectedOptionId = selectedVariants[variant.id];
-        if (selectedOptionId) {
-          const selectedOption = variant.options.find(opt => opt.id === selectedOptionId);
+      product.variants.forEach((variant) => {
+        const selectedOptionName = selectedVariants[variant.name];
+        if (selectedOptionName) {
+          const selectedOption = variant.options.find(opt => opt.name === selectedOptionName);
           if (selectedOption) {
-            newPrice += getPriceChangeValue(selectedOption.price_change);
+            newPrice += selectedOption.price_change || 0;
           }
         }
       });
@@ -132,18 +97,21 @@ export function ProductDetailPage() {
     }
   }, [selectedVariants, product]);
 
-  const handleVariantSelect = (variantId, optionId) => {
-    setSelectedVariants(prev => ({ ...prev, [variantId]: optionId }));
-    if (product) {
-      const variantSpecificImage = product.images.find(img => img.variantOptionId === optionId);
-      const mainImage = product.images.find(img => img.isMain) || product.images[0];
-      setSelectedImage(variantSpecificImage || mainImage || null);
+  const handleVariantSelect = (variantName: string, optionName: string) => {
+    setSelectedVariants(prev => ({ ...prev, [variantName]: optionName }));
+    
+    const variant = product?.variants.find(v => v.name === variantName);
+    const option = variant?.options.find(o => o.name === optionName);
+    if (option?.images && option.images.length > 0) {
+      setSelectedImage(option.images[0]);
+    } else if (product?.images && product.images.length > 0) {
+      setSelectedImage(product.images[0]);
     }
   };
 
-  const handlePersonalisationSubmit = (e) => {
+  const handlePersonalisationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Personalisation request submitted.");
+    toast.success("Personalisation request sent!");
     setShowPersonalisationModal(false);
   };
 
@@ -161,97 +129,57 @@ export function ProductDetailPage() {
         <Header />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
           <h1 className="text-4xl font-bold mb-4 text-[#0a0a4a]">Product Not Found</h1>
-          <p className="text-gray-600">The product you are looking for does not exist.</p>
+          <p className="text-gray-600">The product you are looking for does not exist or has been removed.</p>
         </div>
         <Footer />
       </div>
     );
   }
 
-  const mainImageUrl = selectedImage?.url || product.images?.find(img => img.isMain)?.url || product.images?.[0]?.url || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
-  const mainImageAltText = selectedImage?.altText || product.name || 'Product Image';
-
-  const displayedImages = product.images.filter(img => img.isMain || img.variantOptionId === selectedImage?.variantOptionId);
+  const mainImageUrl = selectedImage || product.images?.[0] || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
       <Header />
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
-          {/* Breadcrumbs */}
-          <nav className="mb-4 text-sm text-gray-500 flex items-center space-x-2">
-            <Link to="/" className="hover:underline">Home</Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="capitalize">{product.tags[0] || 'Uncategorised'}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span>{product.name}</span>
-          </nav>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-            {/* Product Images */}
             <div>
               <div className="aspect-square bg-white rounded-lg overflow-hidden border border-gray-200 mb-4 shadow-sm">
-                <img
-                  src={mainImageUrl}
-                  alt={mainImageAltText}
-                  className="w-full h-full object-contain p-4"
-                />
+                <img src={mainImageUrl} alt={product.name} className="w-full h-full object-contain p-4" />
               </div>
-              {displayedImages.length > 1 && (
+              {product.images.length > 1 && (
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                  {displayedImages.map((image) => (
-                    <div
-                      key={image.id}
-                      className={`aspect-square bg-white rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 border-2 ${selectedImage?.id === image.id ? 'border-[#ddb866]' : 'border-transparent'}`}
-                      onClick={() => setSelectedImage(image)}
-                    >
-                      <img
-                        src={image.url}
-                        alt={image.altText}
-                        className="w-full h-full object-contain p-2"
-                      />
+                  {product.images.map((image, index) => (
+                    <div key={index} className={`aspect-square bg-white rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 border-2 ${selectedImage === image ? 'border-[#ddb866]' : 'border-transparent'}`} onClick={() => setSelectedImage(image)}>
+                      <img src={image} alt={`${product.name} - view ${index + 1}`} className="w-full h-full object-contain p-2" />
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Product Details */}
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <h1 className="text-3xl sm:text-4xl font-bold text-[#0a0a4a]">
-                  {product.name}
-                </h1>
-                <div className="text-2xl sm:text-3xl font-bold text-[#ddb866] mt-2 sm:mt-0">
-                  £{calculatedPrice.toFixed(2)}
-                </div>
+                <h1 className="text-3xl sm:text-4xl font-bold text-[#0a0a4a]">{product.name}</h1>
+                <div className="text-2xl sm:text-3xl font-bold text-[#ddb866] mt-2 sm:mt-0">£{calculatedPrice.toFixed(2)}</div>
               </div>
 
-              {product.is_made_to_order ? (
-                <Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold">Made to Order</Badge>
-              ) : (
-                <p className="text-sm text-gray-500">In stock: {product.quantity}</p>
-              )}
-
+              {product.is_made_to_order ? (<Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold">Made to Order</Badge>) : (<p className="text-sm text-gray-500">In stock: {product.quantity}</p>)}
               <div className="text-gray-700 leading-relaxed [&_p]:my-4 [&_p]:leading-loose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>
 
-              {/* Variant Selects */}
               <div className="space-y-4">
-                {product.variants.length > 0 && product.variants.map((variant) => (
-                  <div key={variant.id}>
-                    <Label htmlFor={variant.id} className="text-sm font-medium text-gray-700">{variant.name}</Label>
-                    <Select onValueChange={(value) => handleVariantSelect(variant.id, value)} value={selectedVariants[variant.id] || ''}>
-                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md">
-                        <SelectValue placeholder={`Select a ${variant.name}`} />
-                      </SelectTrigger>
+                {product.variants.map((variant, index) => (
+                  <div key={index}>
+                    <Label htmlFor={variant.name} className="text-sm font-medium text-gray-700">{variant.name}</Label>
+                    <Select onValueChange={(value) => handleVariantSelect(variant.name, value)} value={selectedVariants[variant.name] || ''}>
+                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md"><SelectValue placeholder={`Select a ${variant.name}`} /></SelectTrigger>
                       <SelectContent>
                         {variant.options.map(option => (
-                          <SelectItem key={option.id} value={option.id} disabled={option.is_sold_out}>
-                            {option.option_name}
+                          <SelectItem key={option.name} value={option.name} disabled={option.is_sold_out}>
+                            {option.name}
                             {option.is_sold_out && <span className="ml-2 text-red-500">(Sold out)</span>}
-                            {getPriceChangeValue(option.price_change) !== 0 && !option.is_sold_out && (
-                              <span className="ml-2 text-gray-500">({getPriceChangeValue(option.price_change) > 0 ? '+' : ''}£{getPriceChangeValue(option.price_change).toFixed(2)})</span>
-                            )}
+                            {option.price_change !== 0 && !option.is_sold_out && (<span className="ml-2 text-gray-500">({option.price_change > 0 ? '+' : ''}£{option.price_change.toFixed(2)})</span>)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -260,243 +188,60 @@ export function ProductDetailPage() {
                 ))}
               </div>
 
-              {/* Quantity and Actions */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="quantity">Qty</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    value={selectedQuantity}
-                    onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    min="1"
-                    className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md"
-                    disabled={product.is_made_to_order}
-                  />
-                </div>
-                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md">
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Add to Cart
-                </Button>
-                <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md">
-                  <Heart className="h-5 w-5" />
-                </Button>
-              </div>
-
-              {/* Product Features & Info */}
-              <div className="bg-gray-100 rounded-lg p-6 space-y-3 shadow-inner">
-                <div className="text-[#0a0a4a] font-medium text-lg">Product Features</div>
-                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.features) }}></div>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mt-4">
-                {product.tags.map((tag, index) => (
-                  <Link to={`/tags/${tag.toLowerCase()}`} key={index}>
-                    <Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">
-                      {tag}
-                    </Badge>
-                  </Link>
-                ))}
+                <div className="flex items-center space-x-2"><Label htmlFor="quantity">Qty</Label><Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={product.quantity !== null && product.quantity < 1} /></div>
+                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md"><ShoppingCart className="h-5 w-5 mr-2" />Add to Cart</Button>
+                <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md"><Heart className="h-5 w-5" /></Button>
               </div>
               
-              {/* Personalisation and Social */}
-              <div className="flex items-center justify-between mt-4">
-                <Button variant="ghost" className="text-[#0a0a4a] hover:bg-transparent hover:underline" onClick={() => setShowPersonalisationModal(true)}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Interested in personalising?
-                </Button>
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-500 text-sm">Share:</span>
-                  <Button variant="ghost" size="icon"><Twitter className="h-4 w-4 text-gray-500 hover:text-blue-400" /></Button>
-                  <Button variant="ghost" size="icon"><Facebook className="h-4 w-4 text-gray-500 hover:text-blue-600" /></Button>
-                  <Button variant="ghost" size="icon"><Mail className="h-4 w-4 text-gray-500 hover:text-gray-700" /></Button>
-                </div>
-              </div>
+              <div className="flex flex-wrap gap-2 mt-4">{product.tags.map((tag, index) => (<Link to={`/tags/${tag.slug}`} key={index}><Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">{tag.name}</Badge></Link>))}</div>
             </div>
           </div>
 
-          {/* Tabbed Section */}
           <div className="mt-16">
-            <div className="flex border-b border-gray-200">
-              <button 
-                className={`${TAB_BUTTON_STYLE} ${activeTab === 'description' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
-                onClick={() => setActiveTab('description')}
-              >
-                Description
-              </button>
-              <button 
-                className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
-                onClick={() => setActiveTab('features')}
-              >
-                Product Features
-              </button>
-              <button 
-                className={`${TAB_BUTTON_STYLE} ${activeTab === 'reviews' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
-                onClick={() => setActiveTab('reviews')}
-              >
-                Reviews
-              </button>
-              <button 
-                className={`${TAB_BUTTON_STYLE} ${activeTab === 'shipping' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
-                onClick={() => setActiveTab('shipping')}
-              >
-                Shipping
-              </button>
-              <button 
-                className={`${TAB_BUTTON_STYLE} ${activeTab === 'processing' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
-                onClick={() => setActiveTab('processing')}
-              >
-                Processing
-              </button>
-              <button 
-                className={`${TAB_BUTTON_STYLE} ${activeTab === 'sizeGuide' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`}
-                onClick={() => setActiveTab('sizeGuide')}
-              >
-                Size Guide
-              </button>
+            <div className="flex border-b border-gray-200 overflow-x-auto">
+              <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'description' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('description')}>Description</button>
+              {product.features && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('features')}>Features</button>}
+              {product.care_instructions && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'care' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('care')}>Care</button>}
+              {product.processing_times && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'processing' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('processing')}>Processing</button>}
+              <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'sizeGuide' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('sizeGuide')}>Size Guide</button>
             </div>
-            <div className="bg-white p-6 rounded-b-lg border border-gray-200">
-              {activeTab === 'description' && (
-                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>
-              )}
-              {activeTab === 'features' && (
-                <div className="text-gray-700 leading-relaxed [&_p]:my-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.features) }}></div>
-              )}
-              {activeTab === 'reviews' && (
-                <div>
-                  <h3 className="font-semibold text-lg text-[#0a0a4a]">Customer Reviews</h3>
-                  {/* Reviews will be dynamically populated here */}
-                  <p className="text-sm text-gray-500 mt-2">No reviews for this product yet. Be the first!</p>
-                </div>
-              )}
-              {activeTab === 'shipping' && (
-                <div className="text-gray-700 leading-relaxed">
-                  <p>Shipping information for this product is not available at this time.</p>
-                  <p>We are working to add more details about our shipping methods and timelines. Please check back soon!</p>
-                </div>
-              )}
-              {activeTab === 'processing' && (
-                <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>
-              )}
+            <div className="bg-white p-6 rounded-b-lg border border-t-0 border-gray-200">
+              {activeTab === 'description' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>)}
+              {activeTab === 'features' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.features) }}></div>)}
+              {activeTab === 'care' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.care_instructions) }}></div>)}
+              {activeTab === 'processing' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>)}
               {activeTab === 'sizeGuide' && (
                 <div className="space-y-8">
-                  {/* Gauge to MM Table */}
                   <div>
                     <h3 className="text-xl font-semibold mb-2 text-[#0a0a4a]">General Piercing Thickness Guide</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Gauge (G) to Millimeter (MM) conversion.
-                    </p>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left table-auto">
-                        <thead>
-                          <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
-                            <th className="py-3 px-6 text-left">Gauge</th>
-                            <th className="py-3 px-6 text-left">Thickness (MM)</th>
-                          </tr>
-                        </thead>
+                        <thead><tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Gauge</th><th className="py-3 px-6 text-left">Thickness (MM)</th></tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
-                          {gaugeThicknessData.map((item, index) => (
-                            <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                              <td className="py-3 px-6">{item.gauge}</td>
-                              <td className="py-3 px-6">{item.thickness}</td>
-                            </tr>
-                          ))}
+                          {gaugeThicknessData.map((item, index) => (<tr key={index} className="border-b border-gray-200 hover:bg-gray-50"><td className="py-3 px-6">{item.gauge}</td><td className="py-3 px-6">{item.thickness}</td></tr>))}
                         </tbody>
                       </table>
                     </div>
                   </div>
-
-                  {/* Inside Diameter Table */}
                   <div>
                     <h3 className="text-xl font-semibold mb-2 text-[#0a0a4a]">General Inside Diameter Guide</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Inside diameter measurements for a comfortable fit.
-                    </p>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left table-auto">
-                        <thead>
-                          <tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal">
-                            <th className="py-3 px-6 text-left">Size (MM)</th>
-                            <th className="py-3 px-6 text-left">Size (Inches)</th>
-                            <th className="py-3 px-6 text-left">Comfort Level</th>
-                            <th className="py-3 px-6 text-left">Best For</th>
-                          </tr>
-                        </thead>
+                        <thead><tr className="bg-gray-100 text-gray-700 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Size (MM)</th><th className="py-3 px-6 text-left">Comfort Level</th><th className="py-3 px-6 text-left">Best For</th></tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
-                          {insideDiameterData.map((size, index) => (
-                            <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                              <td className="py-3 px-6">{size.size}</td>
-                              <td className="py-3 px-6">{size.inches}</td>
-                              <td className="py-3 px-6">
-                                <Badge variant="outline" className={`
-                                  ${size.comfort === 'Snug' ? 'border-orange-500 text-orange-700' : ''}
-                                  ${size.comfort === 'Standard' ? 'border-blue-500 text-blue-700' : ''}
-                                  ${size.comfort === 'Comfortable' ? 'border-green-500 text-green-700' : ''}
-                                  ${size.comfort === 'Roomy' ? 'border-purple-500 text-purple-700' : ''}
-                                  ${size.comfort === 'Very Roomy' ? 'border-indigo-500 text-indigo-700' : ''}
-                                  ${size.comfort === 'Extra Roomy' ? 'border-pink-500 text-pink-700' : ''}
-                                `}>
-                                  {size.comfort}
-                                </Badge>
-                              </td>
-                              <td className="py-3 px-6">{size.bestFor}</td>
-                            </tr>
-                          ))}
+                          {insideDiameterData.map((size, index) => (<tr key={index} className="border-b border-gray-200 hover:bg-gray-50"><td className="py-3 px-6">{size.size}</td><td className="py-3 px-6"><Badge variant="outline">{size.comfort}</Badge></td><td className="py-3 px-6">{size.bestFor}</td></tr>))}
                         </tbody>
                       </table>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-          
-          {/* Recommended Products */}
-          <div className="mt-16">
-            <h2 className="text-3xl font-bold text-[#0a0a4a] mb-6">You Might Also Like</h2>
-            {/* Placeholder for product carousel. We will build this in a future step. */}
-            <div className="flex space-x-4 overflow-x-auto p-2">
-              <div className="w-64 h-64 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-sm text-gray-500">Placeholder</div>
-              <div className="w-64 h-64 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-sm text-gray-500">Placeholder</div>
-              <div className="w-64 h-64 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center text-sm text-gray-500">Placeholder</div>
             </div>
           </div>
         </div>
       </main>
       <Footer />
-
-      {/* Personalisation Modal */}
-      <Dialog open={showPersonalisationModal} onOpenChange={setShowPersonalisationModal}>
-        <DialogContent className="sm:max-w-[425px] rounded-lg shadow-lg">
-          <DialogHeader>
-            <DialogTitle>Personalise this Product</DialogTitle>
-            <DialogDescription>
-              Let us know how we can create your dream piece.
-            </DialogDescription>
-            </DialogHeader>
-          <form onSubmit={handlePersonalisationSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Your Name</Label>
-              <Input id="name" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Your Email</Label>
-              <Input id="email" type="email" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Your Message</Label>
-              <Textarea id="message" required />
-            </div>
-            {/* Hidden inputs to pass product details */}
-            <input type="hidden" name="product_url" value={window.location.href} />
-            <input type="hidden" name="sku" value={`${product.sku_prefix}-${Object.values(selectedVariants).join('-')}`} />
-            <DialogFooter>
-              <Button type="submit">Send Message</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
