@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,6 @@ export function AdminProductsListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate();
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -61,7 +60,6 @@ export function AdminProductsListPage() {
         return;
     }
 
-    // Fetch the full original product data to duplicate
     const { data: fullProduct, error: fetchError } = await supabase
         .from('products')
         .select('*')
@@ -76,10 +74,10 @@ export function AdminProductsListPage() {
     const newName = `${fullProduct.name} (Copy)`;
     const newProductData = {
         ...fullProduct,
-        id: uuidv4(), // Generate a new ID
+        id: uuidv4(),
         name: newName,
         slug: generateSlug(newName),
-        is_active: false, // Duplicates are inactive by default
+        is_active: false,
         is_featured: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -91,7 +89,7 @@ export function AdminProductsListPage() {
         toast.error(`Failed to duplicate product: ${insertError.message}`);
     } else {
         toast.success(`Product "${originalProduct.name}" duplicated successfully.`);
-        await fetchProducts(); // Refresh the list
+        await fetchProducts();
     }
   };
 
@@ -101,7 +99,7 @@ export function AdminProductsListPage() {
         toast.error(`Failed to delete product: ${error.message}`);
     } else {
         toast.success("Product deleted successfully.");
-        setProducts(products.filter(p => p.id !== productId)); // Optimistically update UI
+        setProducts(products.filter(p => p.id !== productId));
     }
   };
 
@@ -167,9 +165,21 @@ export function AdminProductsListPage() {
                       <div className="flex items-center justify-end space-x-1">
                         <Tooltip><TooltipTrigger asChild><a href={`/products/${product.slug}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></a></TooltipTrigger><TooltipContent><p>View on site</p></TooltipContent></Tooltip>
                         <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleDuplicate(product.id)}><Copy className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Duplicate</p></TooltipContent></Tooltip>
-                        <Link to={`/admin/products/${product.id}`}><Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button></Link>
+                        <Tooltip><TooltipTrigger asChild><Link to={`/admin/products/${product.id}`}><Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button></Link></TooltipTrigger><TooltipContent><p>Edit</p></TooltipContent></Tooltip>
                         <AlertDialog>
-                            <Tooltip><TooltipTrigger asChild><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger></TooltipContent><TooltipContent><p>Delete</p></TooltipContent></Tooltip>
+                            {/* BOLD FIX: Corrected the nesting of Tooltip and AlertDialog components */}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Delete</p>
+                                </TooltipContent>
+                            </Tooltip>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
