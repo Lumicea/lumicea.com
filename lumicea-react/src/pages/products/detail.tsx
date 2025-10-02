@@ -21,7 +21,7 @@ const sanitizeHtml = (html: string | null) => {
   return html.replace(scriptRegex, '');
 };
 
-const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors font-medium";
+const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors font-medium whitespace-nowrap";
 const TAB_BUTTON_ACTIVE_STYLE = "bg-white text-[#0a0a4a] border-b-2 border-[#ddb866]";
 const TAB_BUTTON_INACTIVE_STYLE = "bg-transparent text-gray-600 hover:bg-gray-100";
 
@@ -43,13 +43,11 @@ export function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
-  const [showPersonalisationModal, setShowPersonalisationModal] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
       if (!slug) { setLoading(false); return; }
 
-      // BOLD FIX: The query is now unambiguous because the database schema is fixed.
       const { data, error } = await supabase
         .from('products')
         .select(`*, tags:product_tags(tag:tags(name, slug))`)
@@ -57,16 +55,15 @@ export function ProductDetailPage() {
         .single();
 
       if (error || !data) {
-        toast.error("Product not found.");
         console.error('Error fetching product:', error?.message);
-        setProduct(null);
+        setProduct(null); // Keep the "Not Found" page trigger
         setLoading(false);
         return;
       }
 
       const transformedProduct = {
         ...data,
-        tags: data.tags.map((t: any) => t.tag),
+        tags: data.tags.map((t: any) => t.tag).filter(Boolean), // Filter out null tags
         variants: data.variants || [],
         images: data.images || [],
       };
@@ -108,12 +105,6 @@ export function ProductDetailPage() {
     } else if (product?.images && product.images.length > 0) {
       setSelectedImage(product.images[0]);
     }
-  };
-
-  const handlePersonalisationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success("Personalisation request sent!");
-    setShowPersonalisationModal(false);
   };
 
   if (loading) {
