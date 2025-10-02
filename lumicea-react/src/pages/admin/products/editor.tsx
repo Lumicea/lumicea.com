@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
-// BOLD FIX: Re-added the missing Tooltip imports which caused the white screen error.
+// BOLD FIX: Re-added all necessary imports to prevent reference errors.
 import {
   Tooltip,
   TooltipContent,
@@ -112,7 +112,7 @@ const TaxonomyManager = ({ title, items, selectedIds, onToggle, onAdd, placehold
                             key={item.id}
                             variant={selectedIds.includes(item.id) ? 'default' : 'outline'}
                             onClick={() => onToggle(item.id)}
-                            className="cursor-pointer transition-all hover:scale-105 text-base"
+                            className="cursor-pointer transition-all hover:scale-105 text-base py-1 px-3"
                         >
                             {item.name}
                         </Badge>
@@ -180,42 +180,9 @@ const ProductEditor = () => {
     }
   }, [id, navigate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!product) return;
-    const { name, value, type } = e.target;
-    const isChecked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined;
-    setProduct(prev => prev ? { ...prev, [name]: isChecked !== undefined ? isChecked : (name === 'base_price' || name === 'quantity' ? (value === '' ? null : parseFloat(value)) : value) } : null);
-  };
-  
-  const handleMultiSelectToggle = (field: 'categories' | 'collections' | 'tags', id: string) => {
-    if (!product) return;
-    setProduct(prev => {
-      if (!prev) return null;
-      const currentValues = prev[field];
-      const newValues = currentValues.includes(id) ? currentValues.filter(val => val !== id) : [...currentValues, id];
-      return { ...prev, [field]: newValues };
-    });
-  };
-  
-  const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => {
-    if (!name) return;
-    let table = '';
-    let payload: any = {};
-    if (type === 'category') { table = 'categories'; payload = { name, slug: generateSlug(name) }; }
-    else if (type === 'tag') { table = 'tags'; payload = { name }; }
-    else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; }
-    
-    const { data, error } = await supabase.from(table).insert([payload]).select().single();
-    
-    if (error) { toast.error(`Error creating ${type}: ${error.message}.`);
-    } else if (data) {
-        toast.success(`Successfully added ${type}: "${name}".`);
-        if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); }
-        else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); }
-        else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); }
-    }
-  };
-
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { if (!product) return; const { name, value, type } = e.target; const isChecked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined; setProduct(prev => prev ? { ...prev, [name]: isChecked !== undefined ? isChecked : (name === 'base_price' || name === 'quantity' ? (value === '' ? null : parseFloat(value)) : value) } : null); };
+  const handleMultiSelectToggle = (field: 'categories' | 'collections' | 'tags', id: string) => { if (!product) return; setProduct(prev => { if (!prev) return null; const currentValues = prev[field]; const newValues = currentValues.includes(id) ? currentValues.filter(val => val !== id) : [...currentValues, id]; return { ...prev, [field]: newValues }; }); };
+  const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => { if (!name) return; let table = ''; let payload: any = {}; if (type === 'category') { table = 'categories'; payload = { name, slug: generateSlug(name) }; } else if (type === 'tag') { table = 'tags'; payload = { name }; } else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; } const { data, error } = await supabase.from(table).insert([payload]).select().single(); if (error) { toast.error(`Error creating ${type}: ${error.message}.`); } else if (data) { toast.success(`Successfully added ${type}: "${name}".`); if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); } else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); } else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); } } };
   const handleVariantChange = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex] = { ...newVariants[variantIndex], [name]: value }; return { ...prev, variants: newVariants }; }); };
   const handleOptionChange = (variantIndex: number, optionIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value, type } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex] = { ...newOptions[optionIndex], [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (name === 'price_change' ? parseFloat(value) : value) }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; }); };
   const addMasterVariant = () => { if (!product) return; setProduct(prev => prev ? ({ ...prev, variants: [...prev.variants, { name: '', options: [] }] }) : null); };
@@ -224,31 +191,7 @@ const ProductEditor = () => {
   const removeVariantOption = (variantIndex: number, optionIndex: number) => { if (!product) return; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex].options = newVariants[variantIndex].options.filter((_, i) => i !== optionIndex); return { ...prev, variants: newVariants }; }); };
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>, variantIndex?: number, optionIndex?: number) => { if (!product || !e.target.files) return; const file = e.target.files[0]; if (!file) return; const imageUrl = URL.createObjectURL(file); setProduct(prev => { if (!prev) return null; if (variantIndex !== undefined && optionIndex !== undefined) { const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; const newImages = [...(newOptions[optionIndex].images || []), imageUrl]; newOptions[optionIndex] = { ...newOptions[optionIndex], images: newImages }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; } else { return { ...prev, images: [...prev.images, imageUrl] }; } }); };
   const handleImageRemove = (imageToRemove: string, variantIndex?: number, optionIndex?: number) => { if (!product) return; setProduct(prev => { if (!prev) return null; if (variantIndex !== undefined && optionIndex !== undefined) { const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex].images = (newOptions[optionIndex].images || []).filter(img => img !== imageToRemove); newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; } else { return { ...prev, images: prev.images.filter(img => img !== imageToRemove) }; } }); };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!product || !product.name) { toast.error("Please provide a Product Title before saving."); return; }
-    setIsSaving(true);
-    const { categories, collections, tags, ...payload } = product;
-    payload.slug = generateSlug(payload.name); payload.updated_at = new Date().toISOString();
-    try {
-        const { data: savedProduct, error: productError } = isNewProduct ? await supabase.from('products').insert(payload).select().single() : await supabase.from('products').update(payload).eq('id', product.id).select().single();
-        if (productError) throw new Error(`Could not save product: ${productError.message}`);
-        if (!savedProduct) throw new Error("There was a problem saving the product data.");
-        const relationalTables = [ { name: 'product_categories', ids: categories, column: 'category_id' }, { name: 'product_collections', ids: collections, column: 'collection_id' }, { name: 'product_tags', ids: tags, column: 'tag_id' }];
-        for (const table of relationalTables) {
-            await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
-            if (table.ids.length > 0) {
-                const toInsert = table.ids.map(id => ({ product_id: savedProduct.id, [table.column]: id }));
-                const { error } = await supabase.from(table.name).insert(toInsert);
-                if (error) throw new Error(`Error saving ${table.name}: ${error.message}`);
-            }
-        }
-        toast.success(`Product "${savedProduct.name}" has been saved successfully!`);
-        navigate('/admin/products');
-    } catch (error: any) { toast.error(error.message);
-    } finally { setIsSaving(false); }
-  };
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); if (!product || !product.name) { toast.error("Please provide a Product Title before saving."); return; } setIsSaving(true); const { categories, collections, tags, ...payload } = product; payload.slug = generateSlug(payload.name); payload.updated_at = new Date().toISOString(); try { const { data: savedProduct, error: productError } = isNewProduct ? await supabase.from('products').insert(payload).select().single() : await supabase.from('products').update(payload).eq('id', product.id).select().single(); if (productError) throw new Error(`Could not save product: ${productError.message}`); if (!savedProduct) throw new Error("There was a problem saving the product data."); const relationalTables = [ { name: 'product_categories', ids: categories, column: 'category_id' }, { name: 'product_collections', ids: collections, column: 'collection_id' }, { name: 'product_tags', ids: tags, column: 'tag_id' }]; for (const table of relationalTables) { await supabase.from(table.name).delete().eq('product_id', savedProduct.id); if (table.ids.length > 0) { const toInsert = table.ids.map(id => ({ product_id: savedProduct.id, [table.column]: id })); const { error } = await supabase.from(table.name).insert(toInsert); if (error) throw new Error(`Error saving ${table.name}: ${error.message}`); } } toast.success(`Product "${savedProduct.name}" has been saved successfully!`); navigate('/admin/products'); } catch (error: any) { toast.error(error.message); } finally { setIsSaving(false); } };
   
   if (loading || !product) { return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-gray-500" /><p className="ml-4">Loading Product Editor...</p></div>; }
 
