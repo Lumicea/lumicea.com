@@ -48,6 +48,7 @@ export function ProductDetailPage() {
     async function fetchProduct() {
       if (!slug) { setLoading(false); return; }
 
+      // BOLD FIX: The query is now unambiguous because the database schema is fixed.
       const { data, error } = await supabase
         .from('products')
         .select(`*, tags:product_tags(tag:tags(name, slug))`)
