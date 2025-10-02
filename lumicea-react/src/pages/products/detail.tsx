@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Heart, Share2, Facebook, Twitter, Mail, ChevronRight, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Heart, Share2, Facebook, Twitter, Mail, ChevronRight } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -49,6 +49,7 @@ export function ProductDetailPage() {
     async function fetchProduct() {
       if (!slug) { setLoading(false); return; }
 
+      // BOLD FIX: The query is now unambiguous because the database schema is fixed.
       const { data, error } = await supabase
         .from('products')
         .select(`*, tags:product_tags(tag:tags(name, slug))`)
