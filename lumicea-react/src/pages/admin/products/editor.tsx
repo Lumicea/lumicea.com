@@ -195,12 +195,7 @@ const ProductEditor = () => {
                 </Card>
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5 text-[#ddb866]" />Organization</CardTitle></CardHeader>
                     <CardContent className="space-y-8 pt-6">
-                        <div className="space-y-2">
-                           <Label className="font-semibold text-lg text-gray-800">Category</Label>
-                            <Popover><PopoverTrigger asChild><Button variant="outline" role="combobox" className="w-full justify-between">{product.category_id ? categories.find(c => c.id === product.category_id)?.name : "Select a category..."}<ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0"><Command><CommandInput placeholder="Search or add new..." value={categoryInput} onValueChange={setCategoryInput}/><CommandList><CommandEmpty><Button variant="link" onMouseDown={(e) => { e.preventDefault(); handleAddNewItem('category', categoryInput); }}>Add: "{categoryInput}"</Button></CommandEmpty><CommandGroup>{categories.map((cat) => (<CommandItem key={cat.id} value={cat.name} onSelect={() => {setProduct(p => p ? {...p, category_id: cat.id} : p);}}><Check className={cn("mr-2 h-4 w-4", product.category_id === cat.id ? "opacity-100" : "opacity-0")}/>{cat.name}</CommandItem>))}</CommandGroup></CommandList></Command></PopoverContent>
-                            </Popover>
-                        </div>
+                        <TaxonomyManager title="Categories" items={categories} selectedIds={product.categories} onToggle={(id) => handleMultiSelectToggle('categories', id)} onAdd={(name) => handleAddNewItem('category', name)} placeholder="Create a new category..."/>
                         <TaxonomyManager title="Collections" items={collections.map(c => ({ id: c.id, name: c.collection_name }))} selectedIds={product.collections} onToggle={(id) => handleMultiSelectToggle('collections', id)} onAdd={(name) => handleAddNewItem('collection', name)} placeholder="Create a new collection..."/>
                         <TaxonomyManager title="Tags" items={existingTags} selectedIds={product.tags} onToggle={(id) => handleMultiSelectToggle('tags', id)} onAdd={(name) => handleAddNewItem('tag', name)} placeholder="Create a new tag..."/>
                     </CardContent>
