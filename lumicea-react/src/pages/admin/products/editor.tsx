@@ -13,6 +13,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 
+// BOLD FIX: Re-added the missing Tooltip imports which caused the white screen error.
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'; // Keep for variant options
+
+
 // Helper to generate a URL-friendly slug
 const generateSlug = (name: string) => {
     if (!name) return '';
@@ -170,7 +180,6 @@ const ProductEditor = () => {
     }
   }, [id, navigate]);
 
-  // --- HANDLERS (UNCHANGED) ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!product) return;
     const { name, value, type } = e.target;
@@ -247,13 +256,10 @@ const ProductEditor = () => {
     <div className="bg-gray-50/50 min-h-screen">
       <form onSubmit={handleSubmit}>
         <div className="max-w-5xl mx-auto p-4 md:p-8">
-            <div className="flex justify-between items-center mb-8">
-                <div><h1 className="text-3xl font-bold text-gray-900">{isNewProduct ? 'Create New Product' : 'Edit Product'}</h1>{!isNewProduct && <p className="text-sm text-gray-500">Editing: {product.name}</p>}</div>
-                <div className="flex space-x-2"><Button type="button" variant="outline" onClick={() => navigate('/admin/products')} disabled={isSaving}>Cancel</Button><Button type="submit" disabled={isSaving}>{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button></div>
-            </div>
+            <div className="flex justify-between items-center mb-8"><div><h1 className="text-3xl font-bold text-gray-900">{isNewProduct ? 'Create New Product' : 'Edit Product'}</h1>{!isNewProduct && <p className="text-sm text-gray-500">Editing: {product.name}</p>}</div><div className="flex space-x-2"><Button type="button" variant="outline" onClick={() => navigate('/admin/products')} disabled={isSaving}>Cancel</Button><Button type="submit" disabled={isSaving}>{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button></div></div>
             <div className="grid grid-cols-1 gap-8">
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-lumicea-gold" />Details & Descriptions</CardTitle></CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-6 pt-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6"><div className="space-y-2"><Label htmlFor="name">Product Title</Label><Input id="name" name="name" value={product.name} onChange={handleChange} /></div><div className="space-y-2"><Label htmlFor="base_price">Base Price (£)</Label><Input id="base_price" name="base_price" type="number" step="0.01" value={product.base_price} onChange={handleChange} /></div></div>
                         <div className="space-y-2"><Label htmlFor="description">Description</Label><Textarea id="description" name="description" value={product.description} onChange={handleChange} rows={6} /></div>
                         <div className="space-y-2"><Label htmlFor="features">Features</Label><Textarea id="features" name="features" value={product.features} onChange={handleChange} rows={6} placeholder="Use HTML for formatting if needed." /></div>
@@ -261,16 +267,15 @@ const ProductEditor = () => {
                         <div className="space-y-2"><Label htmlFor="processing_times">Processing Times</Label><Textarea id="processing_times" name="processing_times" value={product.processing_times} onChange={handleChange} rows={2} /></div>
                     </CardContent>
                 </Card>
-                <Card className="shadow-sm">
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5 text-lumicea-gold" />Organization</CardTitle></CardHeader>
-                    <CardContent className="space-y-8">
+                <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5 text-lumicea-gold" />Organization</CardTitle></CardHeader>
+                    <CardContent className="space-y-8 pt-6">
                         <TaxonomyManager title="Categories" items={categories} selectedIds={product.categories} onToggle={(id) => handleMultiSelectToggle('categories', id)} onAdd={(name) => handleAddNewItem('category', name)} placeholder="Create a new category..."/>
                         <TaxonomyManager title="Collections" items={collections.map(c => ({ id: c.id, name: c.collection_name }))} selectedIds={product.collections} onToggle={(id) => handleMultiSelectToggle('collections', id)} onAdd={(name) => handleAddNewItem('collection', name)} placeholder="Create a new collection..."/>
                         <TaxonomyManager title="Tags" items={existingTags} selectedIds={product.tags} onToggle={(id) => handleMultiSelectToggle('tags', id)} onAdd={(name) => handleAddNewItem('tag', name)} placeholder="Create a new tag..."/>
                     </CardContent>
                 </Card>
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Image className="h-5 w-5 text-lumicea-gold" />Images & Variants</CardTitle></CardHeader>
-                    <CardContent className="space-y-8">
+                    <CardContent className="space-y-8 pt-6">
                         <div className="space-y-4"><div className="flex justify-between items-center"><Label className="font-semibold">Master Images</Label><TooltipProvider><Tooltip><TooltipTrigger asChild><Label htmlFor="image-upload-master" className="cursor-pointer text-sm font-medium text-lumicea-navy hover:text-lumicea-gold transition-colors"><div className="flex items-center space-x-2"><PlusCircle className="h-4 w-4" /><span>Add</span></div></Label></TooltipTrigger><TooltipContent><p>Add images that apply to all variants.</p></TooltipContent></Tooltip></TooltipProvider><Input id="image-upload-master" type="file" multiple onChange={handleImageAdd} className="hidden"/></div><ScrollArea className="w-full whitespace-nowrap rounded-md border p-4 bg-gray-50/50"><div className="flex w-max space-x-4 p-2">{product.images.map((img, index) => (<div key={index} className="relative w-24 h-24 rounded-md overflow-hidden group"><img src={img} alt="Product" className="w-full h-full object-cover" /><button type="button" onClick={() => handleImageRemove(img)} className="absolute top-1 right-1 text-white bg-gray-900/50 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><XCircle className="h-4 w-4" /></button></div>))}</div></ScrollArea></div>
                         <div className="space-y-6"><Label className="text-lg font-semibold text-gray-800">Product Variants</Label>
                             {product.variants.map((variant, variantIndex) => (
@@ -278,7 +283,7 @@ const ProductEditor = () => {
                                 <div className="flex items-center space-x-4"><Input id={`variant-name-${variantIndex}`} name="name" value={variant.name} onChange={(e) => handleVariantChange(variantIndex, e)} className="flex-grow" placeholder="e.g., Color, Size, Material"/><Button type="button" variant="ghost" size="icon" onClick={() => removeMasterVariant(variantIndex)}><Trash2 className="h-5 w-5 text-red-500" /></Button></div>
                                 <div className="space-y-3 pl-2 border-l-2 border-gray-200"><div className="flex items-center justify-between"><Label className="text-sm font-medium">Variant Options</Label>
                                     <Popover open={openVariantOptions[variantIndex]} onOpenChange={(open) => setOpenVariantOptions(prev => ({ ...prev, [variantIndex]: open }))}><PopoverTrigger asChild><Button type="button" variant="outline" size="sm"><PlusCircle className="h-4 w-4 mr-2" />Add Option</Button></PopoverTrigger>
-                                        <PopoverContent className="w-80 p-0"><Command><CommandInput placeholder="Add new option name..." onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariantOption(variantIndex, e.currentTarget.value); e.currentTarget.value = ''; } }}/><CommandList><CommandEmpty>Type and press Enter to add.</CommandEmpty></CommandList></Command></PopoverContent>
+                                        <PopoverContent className="w-80 p-0"><div className="p-2 flex space-x-2"><Input placeholder="Add new option name..." onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariantOption(variantIndex, e.currentTarget.value); e.currentTarget.value = ''; } }}/><Button type='button' onClick={() => { const input = document.querySelector<HTMLInputElement>('input[placeholder="Add new option name..."]'); if(input) { addVariantOption(variantIndex, input.value); input.value = ''; }}}>Add</Button></div></PopoverContent>
                                     </Popover></div>
                                     {variant.options.map((option, optionIndex) => (
                                     <div key={optionIndex} className="bg-white p-3 rounded-md border"><div className="flex items-center space-x-2 mb-2"><Input type="text" name="name" value={option.name} onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)} className="flex-grow"/><Button type="button" variant="ghost" size="icon" onClick={() => removeVariantOption(variantIndex, optionIndex)}><Trash2 className="h-4 w-4 text-gray-500" /></Button></div>
@@ -297,7 +302,7 @@ const ProductEditor = () => {
                     </CardContent>
                 </Card>
                  <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-lumicea-gold" />Settings</CardTitle></CardHeader>
-                    <CardContent className="flex items-center space-x-6 pt-4">
+                    <CardContent className="flex items-center space-x-6 pt-6">
                         <div className="flex items-center space-x-2"><Checkbox id="active" name="is_active" checked={product.is_active} onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_active: checked as boolean }) : null)}/><Label htmlFor="active" className="text-sm font-medium">Product is Active</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id="featured" name="is_featured" checked={product.is_featured} onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_featured: checked as boolean }) : null)}/><Label htmlFor="featured" className="text-sm font-medium">Featured Product</Label></div>
                     </CardContent>
