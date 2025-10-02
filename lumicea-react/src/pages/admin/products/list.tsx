@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui';
+import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { fetchProducts } from '@/lib/admin-utils';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
-// Define the shape of our product data
 interface Product {
   id: string;
   name: string;
@@ -14,32 +14,30 @@ interface Product {
   is_active: boolean;
   is_featured: boolean;
   created_at: string;
-  variants: Array<{ stock_quantity: number }>;
+  quantity: number | null;
 }
 
-export function AdminProductsListPage({ onEdit, onAdd }: { onEdit: (productId: string) => void; onAdd: () => void }) {
+export function AdminProductsListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const getProducts = async () => {
-      try {
-        const data = await fetchProducts();
-        setProducts(data);
-      } catch (err) {
-        console.error('Failed to fetch products:', err);
-        setError('Failed to load products. Please try again.');
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, sku_prefix, base_price, is_active, is_featured, created_at, quantity');
+      
+      if (error) {
+        toast.error('Failed to fetch products.');
+        console.error('Failed to fetch products:', error);
+      } else {
+        setProducts(data || []);
       }
+      setLoading(false);
     };
     getProducts();
   }, []);
-
-  const totalStock = (variants: Array<{ stock_quantity: number }>) => {
-    return variants.reduce((sum, variant) => sum + variant.stock_quantity, 0);
-  };
 
   if (loading) {
     return (
@@ -49,18 +47,16 @@ export function AdminProductsListPage({ onEdit, onAdd }: { onEdit: (productId: s
     );
   }
 
-  if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Products</h1>
-        <Button onClick={onAdd}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Product
-        </Button>
+        <Link to="/admin/products/new">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </Link>
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
@@ -81,16 +77,18 @@ export function AdminProductsListPage({ onEdit, onAdd }: { onEdit: (productId: s
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.sku_prefix}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatCurrency(product.base_price)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{totalStock(product.variants)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.quantity ?? 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {product.is_active ? 'Active' : 'Draft'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(product.id)}>
-                    <Pencil className="h-4 w-4 text-blue-500" />
-                  </Button>
+                  <Link to={`/admin/products/${product.id}`}>
+                    <Button variant="ghost" size="sm">
+                      <Pencil className="h-4 w-4 text-blue-500" />
+                    </Button>
+                  </Link>
                   <Button variant="ghost" size="sm" onClick={() => { /* Add delete logic here */ }}>
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
