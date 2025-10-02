@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Eye, Search } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlusCircle, Eye, Search, Copy, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Card, CardContent } from '@/components/ui/card';
+import { v4 as uuidv4 } from 'uuid';
+
+const generateSlug = (name: string) => {
+    if (!name) return '';
+    return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-');
+};
 
 interface Product {
   id: string;
@@ -25,25 +32,79 @@ export function AdminProductsListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, slug, base_price, is_active, quantity, is_featured, sku_prefix')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast.error("Failed to fetch products.");
+      console.error(error);
+    } else {
+      setProducts(data as Product[]);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, slug, base_price, is_active, quantity, is_featured, sku_prefix')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        toast.error("Failed to fetch products.");
-        console.error(error);
-      } else {
-        setProducts(data as Product[]);
-      }
-      setLoading(false);
-    };
     fetchProducts();
   }, []);
+
+  const handleDuplicate = async (productId: string) => {
+    const originalProduct = products.find(p => p.id === productId);
+    if (!originalProduct) {
+        toast.error("Original product not found.");
+        return;
+    }
+
+    // Fetch the full original product data to duplicate
+    const { data: fullProduct, error: fetchError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+    
+    if (fetchError || !fullProduct) {
+        toast.error("Failed to fetch full product details to duplicate.");
+        return;
+    }
+
+    const newName = `${fullProduct.name} (Copy)`;
+    const newProductData = {
+        ...fullProduct,
+        id: uuidv4(), // Generate a new ID
+        name: newName,
+        slug: generateSlug(newName),
+        is_active: false, // Duplicates are inactive by default
+        is_featured: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+    };
+
+    const { error: insertError } = await supabase.from('products').insert(newProductData);
+
+    if (insertError) {
+        toast.error(`Failed to duplicate product: ${insertError.message}`);
+    } else {
+        toast.success(`Product "${originalProduct.name}" duplicated successfully.`);
+        await fetchProducts(); // Refresh the list
+    }
+  };
+
+  const handleDelete = async (productId: string) => {
+    const { error } = await supabase.from('products').delete().eq('id', productId);
+    if (error) {
+        toast.error(`Failed to delete product: ${error.message}`);
+    } else {
+        toast.success("Product deleted successfully.");
+        setProducts(products.filter(p => p.id !== productId)); // Optimistically update UI
+    }
+  };
+
 
   const filteredProducts = useMemo(() =>
     products.filter(product =>
@@ -73,20 +134,19 @@ export function AdminProductsListPage() {
       </div>
 
       <Card className="shadow-sm">
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Product Name</TableHead>
-              <TableHead>SKU Prefix</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Price</TableHead>
               <TableHead>Inventory</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center h-24">Loading products...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center h-24">Loading products...</TableCell></TableRow>
             ) : filteredProducts.length > 0 ? (
               filteredProducts.map((product) => (
                 <TableRow key={product.id}>
@@ -96,40 +156,42 @@ export function AdminProductsListPage() {
                     </Link>
                     {product.is_featured && <Badge className="ml-2 bg-lumicea-gold text-lumicea-navy">Featured</Badge>}
                   </TableCell>
-                  <TableCell className="text-gray-500">{product.sku_prefix || 'N/A'}</TableCell>
                   <TableCell>
-                    <Badge variant={product.is_active ? 'default' : 'destructive'} className={product.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {product.is_active ? 'Active' : 'Archived'}
+                    <Badge variant={product.is_active ? 'default' : 'outline'} className={product.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                      {product.is_active ? 'Active' : 'Draft'}
                     </Badge>
                   </TableCell>
-                  <TableCell>£{product.base_price.toFixed(2)}</TableCell>
                   <TableCell>{product.quantity ?? 'Made to order'}</TableCell>
                   <TableCell className="text-right">
                     <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                           <a href={`/products/${product.slug}`} target="_blank" rel="noopener noreferrer">
-                             <Button variant="ghost" size="icon">
-                               <Eye className="h-4 w-4 text-gray-500 hover:text-lumicea-navy" />
-                             </Button>
-                          </a>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>View on site (new tab)</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center justify-end space-x-1">
+                        <Tooltip><TooltipTrigger asChild><a href={`/products/${product.slug}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></a></TooltipTrigger><TooltipContent><p>View on site</p></TooltipContent></Tooltip>
+                        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleDuplicate(product.id)}><Copy className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Duplicate</p></TooltipContent></Tooltip>
+                        <Link to={`/admin/products/${product.id}`}><Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button></Link>
+                        <AlertDialog>
+                            <Tooltip><TooltipTrigger asChild><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger></TooltipContent><TooltipContent><p>Delete</p></TooltipContent></Tooltip>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>This action cannot be undone. This will permanently delete the product from the database.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(product.id)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TooltipProvider>
-                     <Link to={`/admin/products/${product.id}`}>
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </Link>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={6} className="text-center h-24">No products found matching your search.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center h-24">No products found matching your search.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
+        </CardContent>
       </Card>
     </div>
   );
