@@ -5,38 +5,100 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Heart, Share2, Facebook, Twitter, Mail, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { gaugeThicknessData, insideDiameterData } from '../sizeGuideData';
+import { Card, CardContent } from '@/components/ui/card'; // Assuming these exist in your project
 import { toast } from 'sonner';
+import { gaugeThicknessData, insideDiameterData } from '../sizeGuideData'; // Assuming this file exists
 
-// Sanitization function for security
+// Helper function to safely render HTML
 const sanitizeHtml = (html: string | null) => {
-  if (typeof html !== 'string') return '';
-  const scriptRegex = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
-  return html.replace(scriptRegex, '');
+  if (typeof html !== 'string') return { __html: '' };
+  // A basic sanitizer. For production, consider a more robust library like DOMPurify.
+  const sanitized = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
+  return { __html: sanitized };
 };
 
 const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors font-medium whitespace-nowrap";
 const TAB_BUTTON_ACTIVE_STYLE = "bg-white text-[#0a0a4a] border-b-2 border-[#ddb866]";
 const TAB_BUTTON_INACTIVE_STYLE = "bg-transparent text-gray-600 hover:bg-gray-100";
 
-// --- INTERFACES to match the data structure ---
-interface VariantOption { name: string; price_change: number; is_sold_out: boolean; images?: string[]; sku?: string; }
-interface Variant { name: string; options: VariantOption[]; }
-interface Product {
-  id: string; name: string; slug: string; description: string | null; features: string | null; care_instructions: string | null; processing_times: string | null; base_price: number;
-  is_made_to_order: boolean; quantity: number | null; images: string[]; variants: Variant[];
-  product_tags: { tag: { name: string; slug: string } }[]; // This now comes directly from the query
+// --- INTERFACES ---
+interface VariantOption {
+  name: string;
+  price_change: number;
+  is_sold_out: boolean;
+  images?: string[];
+  sku?: string;
 }
+
+interface Variant {
+  name: string;
+  options: VariantOption[];
+}
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  features: string | null;
+  care_instructions: string | null;
+  processing_times: string | null;
+  base_price: number;
+  is_made_to_order: boolean;
+  quantity: number | null;
+  images: string[];
+  variants: Variant[];
+  product_tags: {
+    tag_id: string;
+    tag: {
+      name: string;
+      slug: string;
+    }
+  }[];
+}
+
+interface RecommendedProduct {
+  id: string;
+  name: string;
+  slug: string;
+  base_price: number;
+  images: string[];
+}
+
+// --- Product Recommendations Component ---
+const ProductCarousel = ({ title, products }: { title: string; products: RecommendedProduct[] }) => {
+    if (products.length === 0) return null;
+    return (
+        <div className="py-12">
+            <h2 className="text-2xl font-bold text-center mb-8 text-[#0a0a4a]">{title}</h2>
+            <div className="flex overflow-x-auto space-x-6 pb-4">
+                {products.map(product => (
+                    <Link to={`/products/${product.slug}`} key={product.id} className="flex-shrink-0 w-64">
+                        <Card className="group overflow-hidden">
+                            <div className="aspect-square bg-gray-100 overflow-hidden">
+                                <img src={product.images?.[0] || 'https://placehold.co/400x400'} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                            <CardContent className="p-4">
+                                <h3 className="font-semibold truncate">{product.name}</h3>
+                                <p className="text-lumicea-gold font-bold">£{product.base_price.toFixed(2)}</p>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 export function ProductDetailPage() {
   const { slug } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
+  const [recommendedProducts, setRecommendedProducts] = useState<RecommendedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [calculatedPrice, setCalculatedPrice] = useState(0);
@@ -45,12 +107,15 @@ export function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('description');
 
   useEffect(() => {
-    async function fetchProduct() {
+    async function fetchProductAndRecommendations() {
       if (!slug) { setLoading(false); return; }
+      setLoading(true);
+      setProduct(null); // Reset previous product state on slug change
+      setRecommendedProducts([]);
 
       const { data, error } = await supabase
         .from('products')
-        .select(`*, product_tags(tag:tags(name, slug))`)
+        .select(`*, product_tags(tag_id, tag:tags(name, slug))`)
         .eq('slug', slug)
         .single();
 
@@ -61,27 +126,42 @@ export function ProductDetailPage() {
         return;
       }
 
-      // BOLD FIX: Ensure related arrays are always arrays, even if the query returns null.
-      // This prevents the "cannot read properties of undefined (reading 'map')" error.
-      const transformedProduct = {
+      const fetchedProduct: Product = {
         ...data,
-        product_tags: data.product_tags || [],
         variants: data.variants || [],
         images: data.images || [],
+        product_tags: data.product_tags || [],
       };
+
+      setProduct(fetchedProduct);
+      if (fetchedProduct.images.length > 0) setSelectedImage(fetchedProduct.images[0]);
+      setCalculatedPrice(fetchedProduct.base_price);
       
-      setProduct(transformedProduct as Product);
-      
-      if (transformedProduct.images && transformedProduct.images.length > 0) {
-        setSelectedImage(transformedProduct.images[0]);
+      // Fetch recommendations
+      if (fetchedProduct.product_tags.length > 0) {
+        const tagIds = fetchedProduct.product_tags.map(t => t.tag_id);
+        const { data: relatedProductIds } = await supabase
+          .from('product_tags')
+          .select('product_id')
+          .in('tag_id', tagIds)
+          .neq('product_id', fetchedProduct.id)
+          .limit(15);
+        
+        if (relatedProductIds) {
+          const uniqueProductIds = [...new Set(relatedProductIds.map(p => p.product_id))];
+          const { data: recs } = await supabase
+            .from('products')
+            .select('id, name, slug, base_price, images')
+            .in('id', uniqueProductIds)
+            .limit(8);
+          if (recs) setRecommendedProducts(recs);
+        }
       }
-      setCalculatedPrice(transformedProduct.base_price);
       setLoading(false);
     }
-
-    fetchProduct();
+    fetchProductAndRecommendations();
   }, [slug]);
-
+  
   useEffect(() => {
     if (product) {
       let newPrice = product.base_price;
@@ -105,8 +185,14 @@ export function ProductDetailPage() {
     if (option?.images && option.images.length > 0) {
       setSelectedImage(option.images[0]);
     } else if (product?.images && product.images.length > 0) {
+      // Revert to the first main product image if the variant has no specific image
       setSelectedImage(product.images[0]);
     }
+  };
+
+  const scrollToTabs = () => {
+    setActiveTab('description');
+    document.getElementById('product-tabs')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   if (loading) {
@@ -119,19 +205,27 @@ export function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen text-center py-20 bg-gray-50">
+      <div className="min-h-screen flex flex-col">
         <Header />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-          <h1 className="text-4xl font-bold mb-4 text-[#0a0a4a]">Product Not Found</h1>
-          <p className="text-gray-600">The product you are looking for does not exist or has been removed.</p>
-        </div>
+        <main className="flex-grow flex items-center justify-center text-center bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="text-4xl font-bold mb-4 text-[#0a0a4a]">Product Not Found</h1>
+            <p className="text-gray-600 mb-8">The product you are looking for does not exist or has been removed.</p>
+            <Button asChild>
+                <Link to="/shop">Continue Shopping</Link>
+            </Button>
+          </div>
+        </main>
         <Footer />
       </div>
     );
   }
 
-  const mainImageUrl = selectedImage || product.images?.[0] || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
-  const tags = product.product_tags.map(pt => pt.tag).filter(Boolean); // Extract tags safely
+  const mainImageUrl = selectedImage || product.images?.[0] || 'https://placehold.co/800x800';
+  const tags = product.product_tags.map(pt => pt.tag).filter(Boolean);
+  const description = product?.description || '';
+  const isTruncated = description.length > 250;
+  const truncatedDescription = isTruncated ? `${description.substring(0, 250)}...` : description;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
@@ -139,6 +233,7 @@ export function ProductDetailPage() {
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+            {/* Image Gallery */}
             <div>
               <div className="aspect-square bg-white rounded-lg overflow-hidden border border-gray-200 mb-4 shadow-sm">
                 <img src={mainImageUrl} alt={product.name} className="w-full h-full object-contain p-4" />
@@ -146,7 +241,7 @@ export function ProductDetailPage() {
               {product.images.length > 1 && (
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
                   {product.images.map((image, index) => (
-                    <div key={index} className={`aspect-square bg-white rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 border-2 ${selectedImage === image ? 'border-[#ddb866]' : 'border-transparent'}`} onClick={() => setSelectedImage(image)}>
+                    <div key={index} className={`aspect-square bg-white rounded-md overflow-hidden cursor-pointer transition-all border-2 ${selectedImage === image ? 'border-[#ddb866]' : 'border-transparent'}`} onClick={() => setSelectedImage(image)}>
                       <img src={image} alt={`${product.name} - view ${index + 1}`} className="w-full h-full object-contain p-2" />
                     </div>
                   ))}
@@ -154,15 +249,21 @@ export function ProductDetailPage() {
               )}
             </div>
 
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            {/* Product Details */}
+            <div className="flex flex-col space-y-6">
+              <div className="flex flex-col">
                 <h1 className="text-3xl sm:text-4xl font-bold text-[#0a0a4a]">{product.name}</h1>
-                <div className="text-2xl sm:text-3xl font-bold text-[#ddb866] mt-2 sm:mt-0">£{calculatedPrice.toFixed(2)}</div>
+                <p className="text-3xl sm:text-4xl font-bold text-[#ddb866] mt-2">£{calculatedPrice.toFixed(2)}</p>
+              </div>
+              
+              {product.is_made_to_order ? (<Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold w-fit">Made to Order</Badge>) : (<p className="text-sm text-green-600 font-medium">In stock: {product.quantity}</p>)}
+              
+              <div className="text-gray-700 leading-relaxed space-y-2 prose max-w-none">
+                <div dangerouslySetInnerHTML={sanitizeHtml(truncatedDescription)}></div>
+                {isTruncated && <Button variant="link" onClick={scrollToTabs} className="p-0 h-auto text-lumicea-gold hover:text-lumicea-gold/80">Read more...</Button>}
               </div>
 
-              {product.is_made_to_order ? (<Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold">Made to Order</Badge>) : (<p className="text-sm text-gray-500">In stock: {product.quantity}</p>)}
-              <div className="text-gray-700 leading-relaxed [&_p]:my-4 [&_p]:leading-loose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>
-
+              {/* Variant Selects */}
               <div className="space-y-4">
                 {product.variants.map((variant, index) => (
                   <div key={index}>
@@ -183,17 +284,23 @@ export function ProductDetailPage() {
                 ))}
               </div>
 
+              {/* Actions */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <div className="flex items-center space-x-2"><Label htmlFor="quantity">Qty</Label><Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={product.quantity !== null && product.quantity < 1} /></div>
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="quantity">Qty</Label>
+                    <Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={product.quantity !== null && product.quantity < 1} />
+                </div>
                 <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md"><ShoppingCart className="h-5 w-5 mr-2" />Add to Cart</Button>
                 <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md"><Heart className="h-5 w-5" /></Button>
               </div>
               
-              <div className="flex flex-wrap gap-2 mt-4">{tags.map((tag, index) => (<Link to={`/tags/${tag.slug}`} key={index}><Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">{tag.name}</Badge></Link>))}</div>
+              <div className="flex flex-wrap gap-2 mt-4">
+                {tags.map((tag, index) => (<Link to={`/tags/${tag.slug}`} key={index}><Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">{tag.name}</Badge></Link>))}
+              </div>
             </div>
           </div>
-
-          <div className="mt-16">
+          
+          <div id="product-tabs" className="mt-16">
             <div className="flex border-b border-gray-200 overflow-x-auto">
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'description' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('description')}>Description</button>
               {product.features && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('features')}>Features</button>}
@@ -202,10 +309,10 @@ export function ProductDetailPage() {
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'sizeGuide' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('sizeGuide')}>Size Guide</button>
             </div>
             <div className="bg-white p-6 rounded-b-lg border border-t-0 border-gray-200">
-              {activeTab === 'description' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}></div>)}
-              {activeTab === 'features' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.features) }}></div>)}
-              {activeTab === 'care' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.care_instructions) }}></div>)}
-              {activeTab === 'processing' && (<div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.processing_times) }}></div>)}
+              {activeTab === 'description' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.description)}></div>)}
+              {activeTab === 'features' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.features)}></div>)}
+              {activeTab === 'care' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.care_instructions)}></div>)}
+              {activeTab === 'processing' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.processing_times)}></div>)}
               {activeTab === 'sizeGuide' && (
                 <div className="space-y-8">
                   <div>
@@ -234,6 +341,8 @@ export function ProductDetailPage() {
               )}
             </div>
           </div>
+
+          <ProductCarousel title="You Might Also Like" products={recommendedProducts} />
         </div>
       </main>
       <Footer />
