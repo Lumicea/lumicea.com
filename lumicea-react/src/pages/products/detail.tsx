@@ -25,13 +25,13 @@ const TAB_BUTTON_STYLE = "py-3 px-6 rounded-t-lg transition-colors font-medium w
 const TAB_BUTTON_ACTIVE_STYLE = "bg-white text-[#0a0a4a] border-b-2 border-[#ddb866]";
 const TAB_BUTTON_INACTIVE_STYLE = "bg-transparent text-gray-600 hover:bg-gray-100";
 
-// --- INTERFACES to match the data structure from editor.tsx ---
+// --- INTERFACES to match the data structure ---
 interface VariantOption { name: string; price_change: number; is_sold_out: boolean; images?: string[]; sku?: string; }
 interface Variant { name: string; options: VariantOption[]; }
 interface Product {
   id: string; name: string; slug: string; description: string | null; features: string | null; care_instructions: string | null; processing_times: string | null; base_price: number;
   is_made_to_order: boolean; quantity: number | null; images: string[]; variants: Variant[];
-  tags: { name: string; slug: string }[];
+  product_tags: { tag: { name: string; slug: string } }[]; // Corrected structure
 }
 
 export function ProductDetailPage() {
@@ -48,38 +48,34 @@ export function ProductDetailPage() {
     async function fetchProduct() {
       if (!slug) { setLoading(false); return; }
 
-      // This query will now work because the database schema ambiguity is fixed.
+      // BOLD FIX: Using the unambiguous select string as recommended by the Supabase agent.
       const { data, error } = await supabase
         .from('products')
-        .select(`*, tags:product_tags(tag:tags(name, slug))`)
+        .select(`*, product_tags(tag:tags(name, slug))`) // NO ALIASING on product_tags
         .eq('slug', slug)
         .single();
 
       if (error || !data) {
         console.error('Error fetching product:', error?.message);
-        setProduct(null); // Keep the "Not Found" page trigger
+        setProduct(null);
         setLoading(false);
         return;
       }
 
-      const transformedProduct = {
-        ...data,
-        tags: data.tags.map((t: any) => t.tag).filter(Boolean), // Filter out null tags
-        variants: data.variants || [],
-        images: data.images || [],
-      };
+      // No transformation needed as the structure is now correct from the query
+      setProduct(data as Product);
       
-      setProduct(transformedProduct);
-      if (transformedProduct.images && transformedProduct.images.length > 0) {
-        setSelectedImage(transformedProduct.images[0]);
+      if (data.images && data.images.length > 0) {
+        setSelectedImage(data.images[0]);
       }
-      setCalculatedPrice(transformedProduct.base_price);
+      setCalculatedPrice(data.base_price);
       setLoading(false);
     }
 
     fetchProduct();
   }, [slug]);
 
+  // The rest of the file is unchanged, but included for completeness
   useEffect(() => {
     if (product) {
       let newPrice = product.base_price;
@@ -98,7 +94,6 @@ export function ProductDetailPage() {
 
   const handleVariantSelect = (variantName: string, optionName: string) => {
     setSelectedVariants(prev => ({ ...prev, [variantName]: optionName }));
-    
     const variant = product?.variants.find(v => v.name === variantName);
     const option = variant?.options.find(o => o.name === optionName);
     if (option?.images && option.images.length > 0) {
@@ -130,6 +125,7 @@ export function ProductDetailPage() {
   }
 
   const mainImageUrl = selectedImage || product.images?.[0] || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
+  const tags = product.product_tags.map(pt => pt.tag).filter(Boolean); // Extract tags from the new structure
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
@@ -187,7 +183,7 @@ export function ProductDetailPage() {
                 <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md"><Heart className="h-5 w-5" /></Button>
               </div>
               
-              <div className="flex flex-wrap gap-2 mt-4">{product.tags.map((tag, index) => (<Link to={`/tags/${tag.slug}`} key={index}><Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">{tag.name}</Badge></Link>))}</div>
+              <div className="flex flex-wrap gap-2 mt-4">{tags.map((tag, index) => (<Link to={`/tags/${tag.slug}`} key={index}><Badge className="bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer">{tag.name}</Badge></Link>))}</div>
             </div>
           </div>
 
