@@ -31,7 +31,7 @@ interface Variant { name: string; options: VariantOption[]; }
 interface Product {
   id: string; name: string; slug: string; description: string | null; features: string | null; care_instructions: string | null; processing_times: string | null; base_price: number;
   is_made_to_order: boolean; quantity: number | null; images: string[]; variants: Variant[];
-  product_tags: { tag: { name: string; slug: string } }[]; // Corrected structure
+  product_tags: { tag: { name: string; slug: string } }[]; // This now comes directly from the query
 }
 
 export function ProductDetailPage() {
@@ -48,10 +48,9 @@ export function ProductDetailPage() {
     async function fetchProduct() {
       if (!slug) { setLoading(false); return; }
 
-      // BOLD FIX: Using the unambiguous select string as recommended by the Supabase agent.
       const { data, error } = await supabase
         .from('products')
-        .select(`*, product_tags(tag:tags(name, slug))`) // NO ALIASING on product_tags
+        .select(`*, product_tags(tag:tags(name, slug))`)
         .eq('slug', slug)
         .single();
 
@@ -62,20 +61,27 @@ export function ProductDetailPage() {
         return;
       }
 
-      // No transformation needed as the structure is now correct from the query
-      setProduct(data as Product);
+      // BOLD FIX: Ensure related arrays are always arrays, even if the query returns null.
+      // This prevents the "cannot read properties of undefined (reading 'map')" error.
+      const transformedProduct = {
+        ...data,
+        product_tags: data.product_tags || [],
+        variants: data.variants || [],
+        images: data.images || [],
+      };
       
-      if (data.images && data.images.length > 0) {
-        setSelectedImage(data.images[0]);
+      setProduct(transformedProduct as Product);
+      
+      if (transformedProduct.images && transformedProduct.images.length > 0) {
+        setSelectedImage(transformedProduct.images[0]);
       }
-      setCalculatedPrice(data.base_price);
+      setCalculatedPrice(transformedProduct.base_price);
       setLoading(false);
     }
 
     fetchProduct();
   }, [slug]);
 
-  // The rest of the file is unchanged, but included for completeness
   useEffect(() => {
     if (product) {
       let newPrice = product.base_price;
@@ -125,7 +131,7 @@ export function ProductDetailPage() {
   }
 
   const mainImageUrl = selectedImage || product.images?.[0] || 'https://placehold.co/800x800/e5e7eb/767982?text=Product+Image';
-  const tags = product.product_tags.map(pt => pt.tag).filter(Boolean); // Extract tags from the new structure
+  const tags = product.product_tags.map(pt => pt.tag).filter(Boolean); // Extract tags safely
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
