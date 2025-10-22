@@ -45,7 +45,7 @@ interface Product {
   id: string; name: string; description: string | null; features: any; care_instructions: string | null; processing_times: string | null; base_price: number; slug: string; updated_at: string;
   sku_prefix: string | null;
   // --- MODIFIED: Changed category_id to categories array ---
-  categories: string[]; 
+  categories: string[];
   images: string[]; quantity: number | null; is_made_to_order: boolean; is_active: boolean; is_featured: boolean; created_at: string;
   collections: string[]; tags: string[]; variants: Variant[];
 }
@@ -108,35 +108,35 @@ const ProductEditor = () => {
       const fetchProduct = async () => {
         // --- MODIFIED: Fetching from join tables for categories, collections, and tags ---
         const { data, error } = await supabase.from('products').select(`
-          *, 
+          *,
           product_categories(category_id),
-          product_to_collection(collection_id), 
+          product_to_collection(collection_id),
           product_tags(tag_id)
         `).eq('id', id).single();
-        
+
         if (error) { toast.error(`Error loading product: ${error.message}`); navigate('/admin/products');
-        } else { 
-          const fetched = { 
-            ...data, 
-            variants: data.variants || [], 
+        } else {
+          const fetched = {
+            ...data,
+            variants: data.variants || [],
             categories: data.product_categories.map((c: any) => c.category_id), // <-- FIXED
-            collections: data.product_to_collection.map((c: any) => c.collection_id), 
-            tags: data.product_tags.map((t: any) => t.tag_id), 
-          }; 
-          setProduct(fetched); 
-          setInitialProduct(_.cloneDeep(fetched)); 
+            collections: data.product_to_collection.map((c: any) => c.collection_id),
+            tags: data.product_tags.map((t: any) => t.tag_id),
+          };
+          setProduct(fetched);
+          setInitialProduct(_.cloneDeep(fetched));
         }
       };
       Promise.all([fetchProduct(), fetchRelatedData()]).finally(() => setLoading(false));
     } else {
       // --- MODIFIED: New product data structure ---
-      const newProductData = { 
-        id: uuidv4(), name: '', description: '', features: null, care_instructions: defaultCareInstructions, 
-        processing_times: 'Usually ships in 3-5 business days.', base_price: 0, slug: '', 
-        sku_prefix: generateSkuPrefix(''), variants: [], images: [], quantity: 0, is_made_to_order: false, 
-        is_active: true, is_featured: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), 
+      const newProductData = {
+        id: uuidv4(), name: '', description: '', features: null, care_instructions: defaultCareInstructions,
+        processing_times: 'Usually ships in 3-5 business days.', base_price: 0, slug: '',
+        sku_prefix: generateSkuPrefix(''), variants: [], images: [], quantity: 0, is_made_to_order: false,
+        is_active: true, is_featured: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
         categories: [], // <-- FIXED
-        collections: [], tags: [] 
+        collections: [], tags: []
       };
       setProduct(newProductData);
       setInitialProduct(_.cloneDeep(newProductData));
@@ -167,20 +167,20 @@ const ProductEditor = () => {
       navigate('/admin/products');
     }
   };
-  
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { if (!product) return; const { name, value, type } = e.target; const isChecked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined; setProduct(prev => prev ? { ...prev, [name]: isChecked !== undefined ? isChecked : (name === 'base_price' || name === 'quantity' ? (value === '' ? null : parseFloat(value)) : value) } : null); };
-  
+
   // --- MODIFIED: handleMultiSelectToggle now handles 'categories' ---
-  const handleMultiSelectToggle = (field: 'collections' | 'tags' | 'categories', id: string) => { 
-    if (!product) return; 
-    setProduct(prev => { 
-      if (!prev) return null; 
-      const currentValues = prev[field]; 
-      const newValues = currentValues.includes(id) ? currentValues.filter(val => val !== id) : [...currentValues, id]; 
-      return { ...prev, [field]: newValues }; 
-    }); 
+  const handleMultiSelectToggle = (field: 'collections' | 'tags' | 'categories', id: string) => {
+    if (!product) return;
+    setProduct(prev => {
+      if (!prev) return null;
+      const currentValues = prev[field];
+      const newValues = currentValues.includes(id) ? currentValues.filter(val => val !== id) : [...currentValues, id];
+      return { ...prev, [field]: newValues };
+    });
   };
-  
+
   const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => { if (!name) return; let table = ''; let payload: any = {}; if (type === 'category') { table = 'categories'; payload = { name, slug: generateSlug(name) }; } else if (type === 'tag') { table = 'tags'; payload = { name, slug: generateSlug(name) }; } else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; } const { data, error } = await supabase.from(table).insert([payload]).select().single(); if (error) { toast.error(`Error creating ${type}: ${error.message}.`); } else if (data) { toast.success(`Successfully added ${type}: "${name}".`); if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); } else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); } else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); } } };
   const handleVariantChange = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex] = { ...newVariants[variantIndex], [name]: value }; return { ...prev, variants: newVariants }; }); };
   const handleOptionChange = (variantIndex: number, optionIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value, type } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex] = { ...newOptions[optionIndex], [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (name === 'price_change' ? parseFloat(value) : value) }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; }); };
@@ -190,51 +190,57 @@ const ProductEditor = () => {
   const removeVariantOption = (variantIndex: number, optionIndex: number) => { if (!product) return; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex].options = newVariants[variantIndex].options.filter((_, i) => i !== optionIndex); return { ...prev, variants: newVariants }; }); };
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>, variantIndex?: number, optionIndex?: number) => { if (!product || !e.target.files) return; const file = e.target.files[0]; if (!file) return; const imageUrl = URL.createObjectURL(file); setProduct(prev => { if (!prev) return null; if (variantIndex !== undefined && optionIndex !== undefined) { const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; const newImages = [...(newOptions[optionIndex].images || []), imageUrl]; newOptions[optionIndex] = { ...newOptions[optionIndex], images: newImages }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; } else { return { ...prev, images: [...prev.images, imageUrl] }; } }); };
   const handleImageRemove = (imageToRemove: string, variantIndex?: number, optionIndex?: number) => { if (!product) return; setProduct(prev => { if (!prev) return null; if (variantIndex !== undefined && optionIndex !== undefined) { const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex].images = (newOptions[optionIndex].images || []).filter(img => img !== imageToRemove); newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; } else { return { ...prev, images: prev.images.filter(img => img !== imageToRemove) }; } }); };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product || !product.name) { toast.error("Product name is required."); return; }
     setIsSaving(true);
-    
-    // --- MODIFIED: Destructuring includes 'categories' ---
+
+    // --- **CRITICAL FIX**: Destructure 'categories' out of the payload ---
     const { collections, tags, categories, variants, ...payload } = product;
     payload.slug = generateSlug(payload.name); payload.updated_at = new Date().toISOString();
-    
+
     // --- If Made to Order, force quantity to null ---
     if (payload.is_made_to_order) {
       payload.quantity = null;
     }
 
     try {
+        // This part saves the main product data (everything EXCEPT the categories/tags/collections arrays)
         const { data: savedProduct, error: productError } = id ? await supabase.from('products').update(payload).eq('id', product.id).select().single() : await supabase.from('products').insert(payload).select().single();
         if (productError) throw productError;
         if (!savedProduct) throw new Error("An unknown error occurred while saving the product.");
 
         // --- MODIFIED: Relational tables now includes 'product_categories' ---
-        const relationalTables = [ 
-          { name: 'product_categories', ids: categories, column: 'category_id' },
-          { name: 'product_to_collection', ids: collections, column: 'collection_id' }, 
+        const relationalTables = [
+          { name: 'product_categories', ids: categories, column: 'category_id' }, // Handles categories
+          { name: 'product_to_collection', ids: collections, column: 'collection_id' },
           { name: 'product_tags', ids: tags, column: 'tag_id' }
         ];
-        
+
+        // This loop handles saving the connections in the join tables
         for (const table of relationalTables) {
+            // Delete existing connections first
             await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
+            // Insert the new connections
             if (table.ids.length > 0) {
-                const toInsert = table.ids.map(id => ({ product_id: savedProduct.id, [table.column]: id }));
+                const toInsert = table.ids.map(relId => ({ product_id: savedProduct.id, [table.column]: relId }));
                 const { error } = await supabase.from(table.name).insert(toInsert);
                 if (error) throw new Error(`Error saving relationships for ${table.name}: ${error.message}`);
             }
         }
         toast.success(`Product "${savedProduct.name}" saved successfully!`);
+        setInitialProduct(_.cloneDeep(product)); // Update initial state after successful save
+        setIsDirty(false); // Reset dirty state
         navigate('/admin/products');
     } catch (error: any) {
         if (error.message.includes('duplicate key value violates unique constraint')) { toast.error("Save Failed: A product with this name or slug already exists.");
         } else if (error.message.includes('violates foreign key constraint')) { toast.error(`Save Failed: A database relationship is incorrect.`);
         } else if (error.message.includes('violates check constraint')) { toast.error(`Save Failed: A field does not meet database requirements.`);
-        } else { toast.error(`An unexpected database error occurred: ${error.message}`); }
+        } else { toast.error(`An unexpected database error occurred: ${error.message}`); console.error("Save Error Details:", error);} // Added console log
     } finally { setIsSaving(false); }
   };
-  
+
   if (loading || !product) { return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-gray-500" /><p className="ml-4">Loading Product Editor...</p></div>; }
 
   return (
@@ -249,7 +255,7 @@ const ProductEditor = () => {
                         </AlertDialogContent>
                     </AlertDialog>
                     <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
-                    <Button type="submit" disabled={isSaving} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button>
+                    <Button type="submit" disabled={isSaving || !isDirty} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button>
                 </div>
             </div>
             <div className="grid grid-cols-1 gap-8">
@@ -272,11 +278,11 @@ const ProductEditor = () => {
                     <CardHeader><CardTitle className="flex items-center gap-2"><Warehouse className="h-5 w-5 text-[#ddb866]" />Inventory</CardTitle></CardHeader>
                     <CardContent className="space-y-6 pt-6">
                         <div className="flex items-center space-x-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <Checkbox 
-                                id="is_made_to_order" 
-                                name="is_made_to_order" 
-                                checked={product.is_made_to_order} 
-                                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_made_to_order: checked as boolean, quantity: checked ? null : (prev.quantity || 0) }) : null)}
+                            <Checkbox
+                                id="is_made_to_order"
+                                name="is_made_to_order"
+                                checked={product.is_made_to_order}
+                                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_made_to_order: checked as boolean, quantity: checked ? null : (prev.quantity ?? 0) }) : null)} // Use ?? 0 to handle initial null
                             />
                             <Label htmlFor="is_made_to_order" className="text-sm font-medium">
                                 This product is Made to Order
@@ -285,13 +291,14 @@ const ProductEditor = () => {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="quantity" className={cn(product.is_made_to_order && "text-gray-400")}>Stock Quantity</Label>
-                            <Input 
-                                id="quantity" 
-                                name="quantity" 
-                                type="number" 
-                                step="1" 
-                                value={product.quantity ?? ''} 
-                                onChange={handleChange} 
+                            <Input
+                                id="quantity"
+                                name="quantity"
+                                type="number"
+                                step="1"
+                                min="0" // Ensure quantity cannot be negative
+                                value={product.quantity ?? ''} // Use ?? '' to show empty if null
+                                onChange={handleChange}
                                 disabled={product.is_made_to_order}
                                 placeholder={product.is_made_to_order ? "N/A (Made to Order)" : "Enter stock level..."}
                             />
@@ -316,7 +323,7 @@ const ProductEditor = () => {
                                 <div className="flex items-center space-x-4"><Input id={`variant-name-${variantIndex}`} name="name" value={variant.name} onChange={(e) => handleVariantChange(variantIndex, e)} className="flex-grow" placeholder="e.g., Color, Size, Material"/><Button type="button" variant="ghost" size="icon" onClick={() => removeMasterVariant(variantIndex)}><Trash2 className="h-5 w-5 text-red-500" /></Button></div>
                                 <div className="space-y-3 pl-2 border-l-2 border-gray-200"><div className="flex items-center justify-between"><Label className="text-sm font-medium">Variant Options</Label>
                                     <Popover open={openVariantOptions[variantIndex]} onOpenChange={(open) => setOpenVariantOptions(prev => ({ ...prev, [variantIndex]: open }))}><PopoverTrigger asChild><Button type="button" variant="outline" size="sm"><PlusCircle className="h-4 w-4 mr-2" />Add Option</Button></PopoverTrigger>
-                                        <PopoverContent className="w-80 p-0"><div className="p-2 flex space-x-2"><Input placeholder="Add new option name..." onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariantOption(variantIndex, e.currentTarget.value); e.currentTarget.value = ''; } }}/><Button type='button' onClick={() => { const input = document.querySelector<HTMLInputElement>('input[placeholder="Add new option name..."]'); if(input) { addVariantOption(variantIndex, input.value); input.value = ''; }}}>Add</Button></div></PopoverContent>
+                                        <PopoverContent className="w-80 p-0"><div className="p-2 flex space-x-2"><Input placeholder="Add new option name..." onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariantOption(variantIndex, e.currentTarget.value); e.currentTarget.value = ''; } }}/><Button type='button' onClick={() => { const input = document.querySelector<HTMLInputElement>(`input[placeholder="Add new option name..."]`); if(input) { addVariantOption(variantIndex, input.value); input.value = ''; }}}>Add</Button></div></PopoverContent>
                                     </Popover></div>
                                     {variant.options.map((option, optionIndex) => (
                                     <div key={optionIndex} className="bg-white p-3 rounded-md border"><div className="flex items-center space-x-2 mb-2"><Input type="text" name="name" value={option.name} onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)} className="flex-grow"/><Button type="button" variant="ghost" size="icon" onClick={() => removeVariantOption(variantIndex, optionIndex)}><Trash2 className="h-4 w-4 text-gray-500" /></Button></div>
@@ -341,7 +348,7 @@ const ProductEditor = () => {
                     </CardContent>
                 </Card>
             </div>
-            <div className="pt-8 flex justify-end space-x-4 border-t mt-8"><Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button><Button type="submit" disabled={isSaving} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button></div>
+            <div className="pt-8 flex justify-end space-x-4 border-t mt-8"><Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button><Button type="submit" disabled={isSaving || !isDirty} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button></div>
         </div>
       </form>
     </div>
