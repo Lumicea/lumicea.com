@@ -72,83 +72,79 @@ function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
 
-  // --- RE-ADDED PADDING FIX ---
-  // Calculate padding: Banner (approx. 2.5rem/40px) + Header (h-20/5rem/80px) = 7.5rem (120px)
-  // 120px is pt-30 in Tailwind.
-  // This padding is only applied to non-admin pages that show the header.
-  const topPadding = isAdminPage ? 'pt-0' : 'pt-30';
+  // --- PADDING FIX LOGIC ---
+  // Calculate padding: Banner (approx. 2.5rem/40px) + Header (h-20/5rem/80px) = 7.5rem (120px) -> pt-30
+  const topPaddingClass = isAdminPage ? '' : 'pt-30'; // Apply empty string for admin, padding for others
 
   return (
     <>
       {/* Conditionally render your main site header */}
-      {!isAdminPage && <Header showTopBanner={true} />} 
-      
-      {/* --- RE-ADDED <main> WRAPPER WITH PADDING --- */}
-      <main className={topPadding}>
-        <Routes>
-          {/* Public Routes (keep as is) */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/gift-cards" element={<GiftCardsPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/custom" element={<CustomPage />} />
-          <Route path="/care" element={<CarePage />} />
-          <Route path="/gift-cards" element={<GiftCardsPage />} />
-          <Route path="/collections" element={<CollectionsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/legal/privacy" element={<PrivacyPage />} />
-          <Route path="/legal/cookies" element={<CookiesPage />} />
-          <Route path="/legal/terms" element={<TermsPage />} />
-          <Route path="/shipping" element={<ShippingPage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/story" element={<StoryPage />} />
-          <Route path="/sustainability" element={<SustainabilityPage />} />
-          <Route path="/careers" element={<CareersPage />} />
-          <Route path="/accessibility" element={<AccessibilityPage />} />
-          <Route path="/size-guide" element={<SizeGuidePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/products/:slug" element={<ProductDetailPage />} />
-          
-          <Route path="/categories/:slug" element={<CategoryPage />} />
-          
-          {/* --- ADMIN ROUTES --- */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<AdminProductsPage />} />
-            <Route path="orders" element={<AdminOrdersPage />} />
-            <Route path="customers" element={<AdminCustomersPage />} />
-            <Route path="pages" element={<AdminPagesPage />} />
-            <Route path="blog" element={<AdminBlogPage />} />
-            <Route path="products/new" element={<AdminProductsPage />} />
-            
-            {/* --- THIS IS THE ADMIN ROUTE FIX --- */}
-            {/* It now correctly points to AdminProductsPage, not ProductDetailPage */}
-            <Route path="products/:id" element={<AdminProductsPage />} />
+      {!isAdminPage && <Header showTopBanner={true} />}
 
-            {/* NEW ADMIN ROUTES */}
-            <Route path="categories" element={<AdminCategoriesPage />} />
-            <Route path="banners" element={<AdminBannersPage />} />
-            <Route path="returns" element={<AdminReturnsPage />} />
-            <Route path="seo" element={<AdminSeoPage />} />
-            <Route path="promotions" element={<AdminPromotionsPage />} />
-            <Route path="campaigns" element={<AdminCampaignsPage />} />
-            <Route path="inventory" element={<AdminInventoryPage />} />
-            <Route path="shipping" element={<AdminShippingPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
-            <Route path="marketing" element={<AdminMarketingPage />} />
-            <Route path="analytics" element={<AdminAnalyticsPage />} />
-          </Route>
+      {/* Main content area */}
+      <main> {/* Remove padding from main */}
+        {/* --- ADDED WRAPPER DIV WITH PADDING --- */}
+        <div className={topPaddingClass}> {/* Apply padding to this inner div */}
+          <Routes>
+            {/* Public Routes (keep as is) */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/gift-cards" element={<GiftCardsPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/custom" element={<CustomPage />} />
+            <Route path="/care" element={<CarePage />} />
+            <Route path="/gift-cards" element={<GiftCardsPage />} />
+            <Route path="/collections" element={<CollectionsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/legal/privacy" element={<PrivacyPage />} />
+            <Route path="/legal/cookies" element={<CookiesPage />} />
+            <Route path="/legal/terms" element={<TermsPage />} />
+            <Route path="/shipping" element={<ShippingPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/story" element={<StoryPage />} />
+            <Route path="/sustainability" element={<SustainabilityPage />} />
+            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/accessibility" element={<AccessibilityPage />} />
+            <Route path="/size-guide" element={<SizeGuidePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/products/:slug" element={<ProductDetailPage />} />
 
-          {/* 404 Route */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+            <Route path="/categories/:slug" element={<CategoryPage />} />
+
+            {/* --- ADMIN ROUTES --- */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProductsPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+              <Route path="customers" element={<AdminCustomersPage />} />
+              <Route path="pages" element={<AdminPagesPage />} />
+              <Route path="blog" element={<AdminBlogPage />} />
+              <Route path="products/new" element={<AdminProductsPage />} />
+              <Route path="products/:id" element={<AdminProductsPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="banners" element={<AdminBannersPage />} />
+              <Route path="returns" element={<AdminReturnsPage />} />
+              <Route path="seo" element={<AdminSeoPage />} />
+              <Route path="promotions" element={<AdminPromotionsPage />} />
+              <Route path="campaigns" element={<AdminCampaignsPage />} />
+              <Route path="inventory" element={<AdminInventoryPage />} />
+              <Route path="shipping" element={<AdminShippingPage />} />
+              <Route path="settings" element={<AdminSettingsPage />} />
+              <Route path="marketing" element={<AdminMarketingPage />} />
+              <Route path="analytics" element={<AdminAnalyticsPage />} />
+            </Route>
+
+            {/* 404 Route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </div>
       </main>
       <CookieConsent />
     </>
