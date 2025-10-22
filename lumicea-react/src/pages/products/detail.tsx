@@ -69,6 +69,15 @@ interface RecommendedProduct {
   images: string[];
 }
 
+// --- ADDED: Shipping Method Interface ---
+interface ShippingMethod {
+  name: string;
+  description: string | null;
+  price: number;
+  estimated_days_min: number | null;
+  estimated_days_max: number | null;
+}
+
 // --- Product Recommendations Component ---
 const ProductCarousel = ({ title, products }: { title: string; products: RecommendedProduct[] }) => {
     if (products.length === 0) return null;
@@ -105,14 +114,20 @@ export function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  
+  // --- ADDED: State for shipping methods ---
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
 
   useEffect(() => {
-    async function fetchProductAndRecommendations() {
+    // --- MODIFIED: Renamed function and added shipping fetch ---
+    async function fetchProductData() {
       if (!slug) { setLoading(false); return; }
       setLoading(true);
       setProduct(null); // Reset previous product state on slug change
       setRecommendedProducts([]);
+      setShippingMethods([]); // --- ADDED: Reset shipping methods
 
+      // Fetch Product
       const { data, error } = await supabase
         .from('products')
         .select(`*, product_tags(tag_id, tag:tags(name, slug))`)
@@ -137,7 +152,20 @@ export function ProductDetailPage() {
       if (fetchedProduct.images.length > 0) setSelectedImage(fetchedProduct.images[0]);
       setCalculatedPrice(fetchedProduct.base_price);
       
-      // Fetch recommendations
+      // --- ADDED: Fetch shipping methods ---
+      const { data: shippingData, error: shippingError } = await supabase
+        .from('shipping_methods')
+        .select('name, description, price, estimated_days_min, estimated_days_max')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (shippingError) {
+        console.error('Error fetching shipping methods:', shippingError.message);
+      } else if (shippingData) {
+        setShippingMethods(shippingData);
+      }
+      
+      // Fetch recommendations (This logic was already present)
       if (fetchedProduct.product_tags.length > 0) {
         const tagIds = fetchedProduct.product_tags.map(t => t.tag_id);
         const { data: relatedProductIds } = await supabase
@@ -159,7 +187,7 @@ export function ProductDetailPage() {
       }
       setLoading(false);
     }
-    fetchProductAndRecommendations();
+    fetchProductData();
   }, [slug]);
   
   useEffect(() => {
@@ -256,8 +284,16 @@ export function ProductDetailPage() {
                 <p className="text-3xl sm:text-4xl font-bold text-[#ddb866] mt-2">£{calculatedPrice.toFixed(2)}</p>
               </div>
               
-              {product.is_made_to_order ? (<Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold w-fit">Made to Order</Badge>) : (<p className="text-sm text-green-600 font-medium">In stock: {product.quantity}</p>)}
-              
+              {/* --- MODIFIED: Stock Logic --- */}
+              {product.is_made_to_order ? (
+                <Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold w-fit">Made to Order</Badge>
+              ) : (product.quantity && product.quantity > 0) ? (
+                <p className="text-sm text-green-600 font-medium">In stock: {product.quantity}</p>
+              ) : (
+                <Badge variant="destructive" className="text-sm w-fit">Sold Out</Badge>
+              )}
+              {/* --- END MODIFICATION --- */}
+
               <div className="text-gray-700 leading-relaxed space-y-2 prose max-w-none">
                 <div dangerouslySetInnerHTML={sanitizeHtml(truncatedDescription)}></div>
                 {isTruncated && <Button variant="link" onClick={scrollToTabs} className="p-0 h-auto text-lumicea-gold hover:text-lumicea-gold/80">Read more...</Button>}
@@ -269,7 +305,7 @@ export function ProductDetailPage() {
                   <div key={index}>
                     <Label htmlFor={variant.name} className="text-sm font-medium text-gray-700">{variant.name}</Label>
                     <Select onValueChange={(value) => handleVariantSelect(variant.name, value)} value={selectedVariants[variant.name] || ''}>
-                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md"><SelectValue placeholder={`Select a ${variant.name}`} /></SelectTrigger>
+                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md"><SelectValue placeholder={`Select a ${variant.name}`} /></SelectValue>
                       <SelectContent>
                         {variant.options.map(option => (
                           <SelectItem key={option.name} value={option.name} disabled={option.is_sold_out}>
@@ -288,9 +324,9 @@ export function ProductDetailPage() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <div className="flex items-center space-x-2">
                     <Label htmlFor="quantity">Qty</Label>
-                    <Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={product.quantity !== null && product.quantity < 1} />
+                    <Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={product.quantity !== null && product.quantity < 1 && !product.is_made_to_order} />
                 </div>
-                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md"><ShoppingCart className="h-5 w-5 mr-2" />Add to Cart</Button>
+                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md" disabled={product.quantity !== null && product.quantity < 1 && !product.is_made_to_order}><ShoppingCart className="h-5 w-5 mr-2" />Add to Cart</Button>
                 <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md"><Heart className="h-5 w-5" /></Button>
               </div>
               
@@ -306,6 +342,8 @@ export function ProductDetailPage() {
               {product.features && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('features')}>Features</button>}
               {product.care_instructions && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'care' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('care')}>Care</button>}
               {product.processing_times && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'processing' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('processing')}>Processing</button>}
+              {/* --- ADDED: Shipping Tab Button --- */}
+              <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'shipping' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('shipping')}>Shipping</button>
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'sizeGuide' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('sizeGuide')}>Size Guide</button>
             </div>
             <div className="bg-white p-6 rounded-b-lg border border-t-0 border-gray-200">
@@ -313,6 +351,32 @@ export function ProductDetailPage() {
               {activeTab === 'features' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.features)}></div>)}
               {activeTab === 'care' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.care_instructions)}></div>)}
               {activeTab === 'processing' && (<div className="prose max-w-none" dangerouslySetInnerHTML={sanitizeHtml(product.processing_times)}></div>)}
+              
+              {/* --- ADDED: Shipping Tab Panel --- */}
+              {activeTab === 'shipping' && (
+                <div className="prose max-w-none space-y-4">
+                  <h3 className="text-xl font-semibold text-[#0a0a4a]">Shipping Options</h3>
+                  {shippingMethods.length > 0 ? (
+                    <ul className="list-disc pl-5 space-y-2">
+                      {shippingMethods.map((method) => (
+                        <li key={method.name}>
+                          <strong>{method.name} (£{method.price.toFixed(2)})</strong>
+                          {method.description && <p className="text-sm !mt-1">{method.description}</p>}
+                          {method.estimated_days_min && (
+                            <p className="text-sm text-gray-600 !mt-1">
+                              Estimated delivery: {method.estimated_days_min}
+                              {method.estimated_days_max ? ` - ${method.estimated_days_max}` : ''} business days.
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Shipping details are being updated. Please check back soon.</p>
+                  )}
+                </div>
+              )}
+              
               {activeTab === 'sizeGuide' && (
                 <div className="space-y-8">
                   <div>
@@ -342,6 +406,7 @@ export function ProductDetailPage() {
             </div>
           </div>
 
+          {/* This component was already here and functioning as requested */}
           <ProductCarousel title="You Might Also Like" products={recommendedProducts} />
         </div>
       </main>
