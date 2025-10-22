@@ -1,6 +1,6 @@
 import React from 'react';
 import { AdminProductsListPage } from './list';
-import { ProductEditor } from './editor';
+import { AdminProductEditor } from './editor';
 import { useParams } from 'react-router-dom';
 
 /**
@@ -15,7 +15,7 @@ export function AdminProductsPage() {
   
   // If there's an ID in the URL (editing) or if we are on the 'new' path (creating), show the editor.
   if (id || isCreating) {
-    return <ProductEditor />;
+    return <AdminProductEditor />;
   }
 
   // Otherwise, show the product list.
