@@ -255,6 +255,9 @@ export function ProductDetailPage() {
   const isTruncated = description.length > 250;
   const truncatedDescription = isTruncated ? `${description.substring(0, 250)}...` : description;
 
+  // --- ADDED: Derived state for stock logic ---
+  const isSoldOut = !product.is_made_to_order && (product.quantity === null || product.quantity < 1);
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
       <Header />
@@ -284,10 +287,10 @@ export function ProductDetailPage() {
                 <p className="text-3xl sm:text-4xl font-bold text-[#ddb866] mt-2">£{calculatedPrice.toFixed(2)}</p>
               </div>
               
-              {/* --- MODIFIED: Stock Logic --- */}
+              {/* --- MODIFIED: Stock Logic (Badge) --- */}
               {product.is_made_to_order ? (
                 <Badge className="bg-[#ddb866] text-sm text-[#0a0a4a] font-semibold w-fit">Made to Order</Badge>
-              ) : (product.quantity && product.quantity > 0) ? (
+              ) : (product.quantity !== null && product.quantity > 0) ? (
                 <p className="text-sm text-green-600 font-medium">In stock: {product.quantity}</p>
               ) : (
                 <Badge variant="destructive" className="text-sm w-fit">Sold Out</Badge>
@@ -305,7 +308,6 @@ export function ProductDetailPage() {
                   <div key={index}>
                     <Label htmlFor={variant.name} className="text-sm font-medium text-gray-700">{variant.name}</Label>
                     <Select onValueChange={(value) => handleVariantSelect(variant.name, value)} value={selectedVariants[variant.name] || ''}>
-                      {/* --- THIS IS THE FIXED LINE --- */}
                       <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md"><SelectValue placeholder={`Select a ${variant.name}`} /></SelectTrigger>
                       <SelectContent>
                         {variant.options.map(option => (
@@ -325,9 +327,14 @@ export function ProductDetailPage() {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <div className="flex items-center space-x-2">
                     <Label htmlFor="quantity">Qty</Label>
-                    <Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={product.quantity !== null && product.quantity < 1 && !product.is_made_to_order} />
+                    {/* --- MODIFIED: Stock Logic (Input) --- */}
+                    <Input id="quantity" type="number" value={selectedQuantity} onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))} min="1" className="w-20 border-gray-300 focus:border-[#ddb866] rounded-md" disabled={isSoldOut} />
                 </div>
-                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md" disabled={product.quantity !== null && product.quantity < 1 && !product.is_made_to_order}><ShoppingCart className="h-5 w-5 mr-2" />Add to Cart</Button>
+                {/* --- MODIFIED: Stock Logic (Button) --- */}
+                <Button className="flex-1 bg-[#ddb866] text-[#0a0a4a] hover:bg-[#ddb866]/90 shadow-lg font-semibold transition-all duration-300 rounded-md" disabled={isSoldOut}>
+                  <ShoppingCart className="h-5 w-5 mr-2" />
+                  {isSoldOut ? "Sold Out" : "Add to Cart"}
+                </Button>
                 <Button variant="outline" size="icon" className="border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500 transition-colors rounded-md"><Heart className="h-5 w-5" /></Button>
               </div>
               
