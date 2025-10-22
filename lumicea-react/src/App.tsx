@@ -45,6 +45,9 @@ import { SizeGuidePage } from "@/pages/size-guide.tsx";
 // --- ADDED new dynamic category page ---
 import { CategoryPage } from "@/pages/categories/index.tsx";
 
+// --- ADD: Import the new TagPage ---
+import { TagPage } from "@/pages/tags/index.tsx";
+
 
 // Admin Pages (these will now be children of AdminLayout)
 import { AdminDashboard } from "@/pages/admin/dashboard/index.tsx";
@@ -150,6 +153,10 @@ function AppContent() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/products/:slug" element={<ProductDetailPage />} />
           <Route path="/categories/:slug" element={<CategoryPage />} />
+
+          {/* --- ADD: The new route for tags --- */}
+          <Route path="/tags/:slug" element={<TagPage />} />
+
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
