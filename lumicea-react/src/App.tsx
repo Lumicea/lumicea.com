@@ -54,7 +54,8 @@ import { AdminProductsPage } from "@/pages/admin/products/index.tsx";
 import { AdminOrdersPage } from "@/pages/admin/orders/index.tsx";
 import { AdminCustomersPage } from "@/pages/admin/customers/index.tsx";
 import { AdminPagesPage } from "@/pages/admin/pages/index.tsx";
-import { AdminBlogPage } from "@/pagesAFadmin/blog/index.tsx";
+// --- THIS IS THE FIXED LINE ---
+import { AdminBlogPage } from "@/pages/admin/blog/index.tsx";
 
 // New Admin Page Imports based on the user's list
 import  AdminCategoriesPage from "@/pages/admin/categories/index.tsx";
