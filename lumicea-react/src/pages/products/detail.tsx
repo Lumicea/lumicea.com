@@ -341,7 +341,7 @@ export function ProductDetailPage() {
             <div className="flex border-b border-gray-200 overflow-x-auto">
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'description' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('description')}>Description</button>
               {product.features && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('features')}>Features</button>}
-              {product.care_instructions && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'care' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('care')}>Care</Routtton>}
+              {product.care_instructions && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'care' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('care')}>Care</button>}
               {product.processing_times && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'processing' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('processing')}>Processing</button>}
               {/* --- ADDED: Shipping Tab Button --- */}
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'shipping' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('shipping')}>Shipping</button>
