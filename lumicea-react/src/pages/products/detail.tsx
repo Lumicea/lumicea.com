@@ -305,7 +305,8 @@ export function ProductDetailPage() {
                   <div key={index}>
                     <Label htmlFor={variant.name} className="text-sm font-medium text-gray-700">{variant.name}</Label>
                     <Select onValueChange={(value) => handleVariantSelect(variant.name, value)} value={selectedVariants[variant.name] || ''}>
-                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md"><SelectValue placeholder={`Select a ${variant.name}`} /></SelectValue>
+                      {/* --- THIS IS THE FIXED LINE --- */}
+                      <SelectTrigger className="w-full mt-1 border-gray-300 focus:border-[#ddb866] rounded-md"><SelectValue placeholder={`Select a ${variant.name}`} /></SelectTrigger>
                       <SelectContent>
                         {variant.options.map(option => (
                           <SelectItem key={option.name} value={option.name} disabled={option.is_sold_out}>
@@ -340,7 +341,7 @@ export function ProductDetailPage() {
             <div className="flex border-b border-gray-200 overflow-x-auto">
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'description' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('description')}>Description</button>
               {product.features && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'features' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('features')}>Features</button>}
-              {product.care_instructions && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'care' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('care')}>Care</button>}
+              {product.care_instructions && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'care' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('care')}>Care</Routtton>}
               {product.processing_times && <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'processing' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('processing')}>Processing</button>}
               {/* --- ADDED: Shipping Tab Button --- */}
               <button className={`${TAB_BUTTON_STYLE} ${activeTab === 'shipping' ? TAB_BUTTON_ACTIVE_STYLE : TAB_BUTTON_INACTIVE_STYLE}`} onClick={() => setActiveTab('shipping')}>Shipping</button>
