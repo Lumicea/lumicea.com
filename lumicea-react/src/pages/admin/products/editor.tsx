@@ -110,47 +110,44 @@ const ProductEditor = () => {
 
     if (id) {
       const fetchProduct = async () => {
-        // --- **CRITICAL FIX**: Simplified the main product fetch ---
-        // We fetch relations separately now to avoid schema cache issues.
         const { data: productData, error: productError } = await supabase
             .from('products')
-            .select('*') // Select all columns from the products table itself
+            .select('*')
             .eq('id', id)
             .single();
 
         if (productError) {
           toast.error(`Error loading product: ${productError.message}`);
           navigate('/admin/products');
-          return; // Stop execution if product fetch fails
+          return;
         }
 
-        // Fetch relations separately
         const [catLinks, colLinks, tagLinks] = await Promise.all([
            supabase.from('product_categories').select('category_id').eq('product_id', id),
            supabase.from('product_to_collection').select('collection_id').eq('product_id', id),
            supabase.from('product_tags').select('tag_id').eq('product_id', id)
         ]);
 
-        // Check for errors in relation fetching (optional but good practice)
         if (catLinks.error || colLinks.error || tagLinks.error) {
              console.error("Error fetching product relations:", catLinks.error || colLinks.error || tagLinks.error);
              toast.warning("Could not load all product relations (categories/tags/collections).");
-             // Continue loading the product, but relations might be incomplete
         }
 
         const fetched = {
             ...productData,
-            variants: productData.variants || [], // Ensure variants is always an array
-            categories: catLinks.data?.map((c: any) => c.category_id) || [], // Use fetched relation data
-            collections: colLinks.data?.map((c: any) => c.collection_id) || [], // Use fetched relation data
-            tags: tagLinks.data?.map((t: any) => t.tag_id) || [], // Use fetched relation data
+            // **IMPORTANT**: Assuming your 'products' table *does* have a 'variants' JSONB column.
+            // If variants are stored elsewhere, adjust this line.
+            variants: productData.variants || [],
+            categories: catLinks.data?.map((c: any) => c.category_id) || [],
+            collections: colLinks.data?.map((c: any) => c.collection_id) || [],
+            tags: tagLinks.data?.map((t: any) => t.tag_id) || [],
         };
         setProduct(fetched);
         setInitialProduct(_.cloneDeep(fetched));
       };
       Promise.all([fetchProduct(), fetchRelatedData()]).finally(() => setLoading(false));
     } else {
-      // New product setup remains the same
+      // New product setup
       const newProductData = {
         id: uuidv4(), name: '', description: '', features: null, care_instructions: defaultCareInstructions,
         processing_times: 'Usually ships in 3-5 business days.', base_price: 0, slug: '',
@@ -207,7 +204,6 @@ const ProductEditor = () => {
     else if (type === 'tag') { table = 'tags'; payload = { name, slug: generateSlug(name) }; }
     else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; }
 
-    // Add toast for adding process
     const promise = supabase.from(table).insert([payload]).select().single();
     toast.promise(promise, {
       loading: `Adding new ${type}: "${name}"...`,
@@ -243,26 +239,36 @@ const ProductEditor = () => {
     if (!product || !product.name) { toast.error("Product name is required."); return; }
     setIsSaving(true);
 
-    // Destructure all relational arrays and variants out of the main payload
+    // --- **CRITICAL FIX**: Destructure 'variants' out if it shouldn't be saved directly ---
+    // If your 'products' table *DOES NOT* have a 'variants' column, keep this line.
+    // If it *DOES* have a 'variants' JSONB column, you can remove 'variants' from this destructuring.
     const { collections, tags, categories, variants, ...payload } = product;
     payload.slug = generateSlug(payload.name);
     payload.updated_at = new Date().toISOString();
 
-    // Add variants back if using JSONB column (adjust if using separate table)
-    (payload as any).variants = variants;
+    // --- REMOVED THE LINE ADDING variants BACK TO payload ---
+    // (payload as any).variants = variants; // REMOVE THIS LINE if 'products' table has no 'variants' column
 
-    // Force quantity to null if Made to Order
+    // **IMPORTANT**: If your 'products' table *DOES* have a 'variants' JSONB column,
+    // ensure it's included in the payload like this (adjust if needed):
+    // payload.variants = variants;
+
+
     if (payload.is_made_to_order) {
       payload.quantity = null;
     }
 
-    // Wrap the entire save process in a toast promise
     const savePromise = new Promise(async (resolve, reject) => {
       try {
-          const { data: savedProduct, error: productError } = id ? await supabase.from('products').update(payload).eq('id', product.id).select().single() : await supabase.from('products').insert(payload).select().single();
-          if (productError) throw productError;
-          if (!savedProduct) throw new Error("An unknown error occurred while saving the product.");
+          // Save main product data
+          const { data: savedProduct, error: productError } = id
+            ? await supabase.from('products').update(payload).eq('id', product.id).select().single()
+            : await supabase.from('products').insert(payload).select().single();
 
+          if (productError) throw productError; // Throw error to be caught by toast
+          if (!savedProduct) throw new Error("Unknown error saving product."); // Throw generic error
+
+          // Save relationships
           const relationalTables = [
             { name: 'product_categories', ids: categories, column: 'category_id' },
             { name: 'product_to_collection', ids: collections, column: 'collection_id' },
@@ -270,44 +276,57 @@ const ProductEditor = () => {
           ];
 
           for (const table of relationalTables) {
-              await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
+              // Delete existing relations first
+              const { error: deleteError } = await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
+              if (deleteError) {
+                  // Log but potentially continue? Or reject here? Depends on desired behavior.
+                  console.error(`Error deleting existing ${table.name}:`, deleteError);
+                  // Optionally reject to show a specific error:
+                  // reject(new Error(`Failed to clear old ${table.name.replace(/_/g, ' ')}.`)); return;
+              }
+
+              // Insert new relations if any exist
               if (table.ids.length > 0) {
                   const toInsert = table.ids.map(relId => ({ product_id: savedProduct.id, [table.column]: relId }));
-                  const { error: relationError } = await supabase.from(table.name).insert(toInsert);
-                  if (relationError) {
-                      // Reject the promise with a specific message
-                      reject(new Error(`Error saving ${table.name.replace(/_/g, ' ')}: ${relationError.message}`));
-                      return; // Stop processing further relations on error
+                  const { error: insertError } = await supabase.from(table.name).insert(toInsert);
+                  if (insertError) {
+                      reject(new Error(`Error saving ${table.name.replace(/_/g, ' ')}: ${insertError.message}`));
+                      return; // Stop processing on first relation error
                   }
               }
           }
-          resolve(savedProduct); // Resolve the promise with the saved product data
+          resolve(savedProduct); // Resolve with the saved product data if everything succeeded
       } catch (error) {
-          reject(error); // Reject the promise on any error during save
+          reject(error); // Reject the promise if any error occurred
       }
     });
 
     toast.promise(savePromise, {
         loading: `${id ? 'Updating' : 'Creating'} product "${product.name}"...`,
         success: (savedData: any) => {
-          setInitialProduct(_.cloneDeep(product)); // Update initial state
-          setIsDirty(false); // Reset dirty flag
-          setTimeout(() => navigate('/admin/products'), 1000); // Navigate after a short delay
-          return `Product "${savedData.name}" ${id ? 'updated' : 'created'} successfully!`;
+          // Update initial state only after successful save
+          const updatedProductState = { ...product, id: savedData.id, slug: savedData.slug, updated_at: savedData.updated_at }; // Ensure we capture generated slug/id
+          setInitialProduct(_.cloneDeep(updatedProductState));
+          setIsDirty(false);
+          setTimeout(() => navigate('/admin/products'), 1000); // Navigate after success message shows
+          return `Product "${savedData.name}" ${id ? 'updated' : 'created'} successfully! 🎉`;
         },
         error: (error: any) => {
-          console.error("Save Error Details:", error); // Log the full error
-          setIsSaving(false); // Ensure saving state is reset on error
-          if (error.message.includes('duplicate key value violates unique constraint')) { return "Save Failed: A product with this name or slug already exists.";
-          } else if (error.message.includes('violates foreign key constraint')) { return `Save Failed: A database relationship is incorrect.`;
-          } else if (error.message.includes('violates check constraint') || error.code === '22P02') { return `Save Failed: A field (like price or quantity) has an invalid value.`;
-          } else if (error.message.includes('Error saving')) { return error.message; // Show specific relation error
-          } else { return `An unexpected database error occurred: ${error.message}. Check console for details.`; }
+          console.error("Save Error Details:", error); // Keep console log for debugging
+          setIsSaving(false); // **Ensure isSaving is reset on error**
+          // Provide more specific feedback based on common errors
+          if (error.message.includes('duplicate key value violates unique constraint')) { return "Save Failed: A product with this name or slug might already exist.";
+          } else if (error.message.includes('violates foreign key constraint')) { return `Save Failed: A selected category, tag, or collection might no longer exist.`;
+          } else if (error.message.includes('violates check constraint') || error.code === '22P02') { return `Save Failed: Check fields like price or quantity for invalid values.`;
+          } else if (error.message.startsWith('Error saving')) { return error.message; // Show specific relation error from the promise rejection
+          } else if (error.message.includes("Could not find the 'variants' column")) { return "Save Failed: Internal configuration error regarding product variants. Please contact support."; // User-friendly message for the specific error
+          } else { return `An unexpected error occurred: ${error.message}. Check console.`; }
         },
     });
 
-    // We don't need setIsSaving(false) here anymore as the toast handles it
+    // Removed setIsSaving(false) from here - it's handled in the toast's error callback now.
   };
+
 
   if (loading || !product) { return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-gray-500" /><p className="ml-4">Loading Product Editor...</p></div>; }
 
@@ -327,13 +346,14 @@ const ProductEditor = () => {
                 </div>
             </div>
             <div className="grid grid-cols-1 gap-8">
+                {/* Details Card */}
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#ddb866]" />Details & Descriptions</CardTitle></CardHeader>
                     <CardContent className="space-y-6 pt-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="space-y-2"><Label htmlFor="name">Product Title</Label><Input id="name" name="name" value={product.name} onChange={handleNameChange} /></div>
+                            <div className="space-y-2"><Label htmlFor="name">Product Title</Label><Input id="name" name="name" value={product.name} onChange={handleNameChange} required/></div> {/* Added required */}
                             <div className="space-y-2"><Label htmlFor="sku_prefix">SKU Prefix</Label><Input id="sku_prefix" name="sku_prefix" value={product.sku_prefix || ''} readOnly disabled className="bg-gray-100" /></div>
                         </div>
-                        <div className="space-y-2"><Label htmlFor="base_price">Base Price (£)</Label><Input id="base_price" name="base_price" type="number" step="0.01" value={product.base_price} onChange={handleChange} /></div>
+                        <div className="space-y-2"><Label htmlFor="base_price">Base Price (£)</Label><Input id="base_price" name="base_price" type="number" step="0.01" min="0" value={product.base_price} onChange={handleChange} required/></div> {/* Added required & min */}
                         <div className="space-y-2"><Label htmlFor="description">Description</Label><Textarea id="description" name="description" value={product.description || ''} onChange={handleChange} rows={6} /></div>
                         <div className="space-y-2"><Label htmlFor="features">Features</Label><Textarea id="features" name="features" value={product.features || ''} onChange={handleChange} rows={6} placeholder="Use HTML for formatting if needed." /></div>
                         <div className="space-y-2"><Label htmlFor="care_instructions">Care Instructions</Label><Textarea id="care_instructions" name="care_instructions" value={product.care_instructions || ''} onChange={handleChange} rows={10} /></div>
@@ -341,7 +361,7 @@ const ProductEditor = () => {
                     </CardContent>
                 </Card>
 
-                {/* --- Inventory Card --- */}
+                {/* Inventory Card */}
                 <Card className="shadow-sm">
                     <CardHeader><CardTitle className="flex items-center gap-2"><Warehouse className="h-5 w-5 text-[#ddb866]" />Inventory</CardTitle></CardHeader>
                     <CardContent className="space-y-6 pt-6">
@@ -350,7 +370,7 @@ const ProductEditor = () => {
                                 id="is_made_to_order"
                                 name="is_made_to_order"
                                 checked={product.is_made_to_order}
-                                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_made_to_order: checked as boolean, quantity: checked ? null : (prev.quantity ?? 0) }) : null)} // Use ?? 0 to handle initial null
+                                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_made_to_order: checked as boolean, quantity: checked ? null : (prev.quantity ?? 0) }) : null)}
                             />
                             <Label htmlFor="is_made_to_order" className="text-sm font-medium">
                                 This product is Made to Order
@@ -364,8 +384,8 @@ const ProductEditor = () => {
                                 name="quantity"
                                 type="number"
                                 step="1"
-                                min="0" // Ensure quantity cannot be negative
-                                value={product.quantity ?? ''} // Use ?? '' to show empty if null
+                                min="0"
+                                value={product.quantity ?? ''}
                                 onChange={handleChange}
                                 disabled={product.is_made_to_order}
                                 placeholder={product.is_made_to_order ? "N/A (Made to Order)" : "Enter stock level..."}
@@ -374,17 +394,21 @@ const ProductEditor = () => {
                     </CardContent>
                 </Card>
 
+                {/* Organization Card */}
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5 text-[#ddb866]" />Organization</CardTitle></CardHeader>
                     <CardContent className="space-y-8 pt-6">
-                        {/* --- Categories Taxonomy Manager --- */}
                         <TaxonomyManager title="Categories" items={categories} selectedIds={product.categories} onToggle={(id) => handleMultiSelectToggle('categories', id)} onAdd={(name) => handleAddNewItem('category', name)} placeholder="Create a new category..."/>
                         <TaxonomyManager title="Collections" items={collections.map(c => ({ id: c.id, name: c.collection_name }))} selectedIds={product.collections} onToggle={(id) => handleMultiSelectToggle('collections', id)} onAdd={(name) => handleAddNewItem('collection', name)} placeholder="Create a new collection..."/>
                         <TaxonomyManager title="Tags" items={existingTags} selectedIds={product.tags} onToggle={(id) => handleMultiSelectToggle('tags', id)} onAdd={(name) => handleAddNewItem('tag', name)} placeholder="Create a new tag..."/>
                     </CardContent>
                 </Card>
+
+                {/* Images & Variants Card */}
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Image className="h-5 w-5 text-[#ddb866]" />Images & Variants</CardTitle></CardHeader>
                     <CardContent className="space-y-8 pt-6">
+                        {/* Master Images */}
                         <div className="space-y-4"><div className="flex justify-between items-center"><Label className="font-semibold">Master Images</Label><TooltipProvider><Tooltip><TooltipTrigger asChild><Label htmlFor="image-upload-master" className="cursor-pointer text-sm font-medium text-lumicea-navy hover:text-lumicea-gold transition-colors"><div className="flex items-center space-x-2"><PlusCircle className="h-4 w-4" /><span>Add</span></div></Label></TooltipTrigger><TooltipContent><p>Add images that apply to all variants.</p></TooltipContent></Tooltip></TooltipProvider><Input id="image-upload-master" type="file" multiple onChange={handleImageAdd} className="hidden"/></div><ScrollArea className="w-full whitespace-nowrap rounded-md border p-4 bg-gray-50/50"><div className="flex w-max space-x-4 p-2">{product.images.map((img, index) => (<div key={index} className="relative w-24 h-24 rounded-md overflow-hidden group"><img src={img} alt="Product" className="w-full h-full object-cover" /><button type="button" onClick={() => handleImageRemove(img)} className="absolute top-1 right-1 text-white bg-gray-900/50 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><XCircle className="h-4 w-4" /></button></div>))}</div></ScrollArea></div>
+                        {/* Variants Section */}
                         <div className="space-y-6"><Label className="text-lg font-semibold text-gray-800">Product Variants</Label>
                             {product.variants.map((variant, variantIndex) => (
                                 <div key={variantIndex} className="bg-gray-50 border border-gray-200 p-4 rounded-lg space-y-4">
@@ -409,6 +433,8 @@ const ProductEditor = () => {
                         </div>
                     </CardContent>
                 </Card>
+
+                 {/* Settings Card */}
                  <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-[#ddb866]" />Settings</CardTitle></CardHeader>
                     <CardContent className="flex items-center space-x-6 pt-6">
                         <div className="flex items-center space-x-2"><Checkbox id="active" name="is_active" checked={product.is_active} onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_active: checked as boolean }) : null)}/><Label htmlFor="active" className="text-sm font-medium">Product is Active</Label></div>
@@ -416,6 +442,7 @@ const ProductEditor = () => {
                     </CardContent>
                 </Card>
             </div>
+            {/* Save Button Area */}
             <div className="pt-8 flex justify-end space-x-4 border-t mt-8"><Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button><Button type="submit" disabled={isSaving || !isDirty} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button></div>
         </div>
       </form>
