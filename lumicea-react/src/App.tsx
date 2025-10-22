@@ -1,5 +1,7 @@
 // lumicea-react/src/App.tsx
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react'; // <-- ADDED useState and useEffect
+import { cn } from '@/lib/utils'; // <-- ADDED cn utility
 
 // Import ScrollToTop component
 import { ScrollToTop } from '@/components/scroll-to-top';
@@ -8,7 +10,7 @@ import { ScrollToTop } from '@/components/scroll-to-top';
 import { Header } from './components/layout/header';
 
 // Import AdminLayout
-import { AdminLayout } from './components/layout/admin-layout'; // <--- Make sure this is imported!
+import { AdminLayout } from './components/layout/admin-layout'; 
 
 // Pages (keeping your existing imports, just showing where AdminLayout fits)
 import { HomePage } from "@/pages/home/index.tsx";
@@ -72,18 +74,51 @@ function AppContent() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
 
-  // --- REVERTED PADDING FIX LOGIC ---
-  // Apply padding directly to the main element again
-  const topPaddingClass = isAdminPage ? '' : 'pt-30';
+  // --- START: DYNAMIC PADDING LOGIC ---
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    // Only add scroll listener for public pages
+    if (!isAdminPage) {
+      window.addEventListener('scroll', handleScroll);
+      // Set initial state
+      handleScroll();
+    }
+
+    // Cleanup listener
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isAdminPage]); // Re-run effect if we navigate between public/admin
+
+  // The header component's showTopBanner prop is hardcoded to true.
+  // When not scrolled, we need padding for the banner + nav (h-20).
+  // h-20 (80px) + banner (approx 44-48px) = ~128px. 'pt-32' (8rem/128px) is correct.
+  // When scrolled, we just need padding for the nav (h-20). 'pt-20' (5rem/80px) is correct.
+  
+  const topPaddingClass = isAdminPage
+    ? '' // No padding for admin area
+    : isScrolled
+    ? 'pt-20' // Scrolled state: padding for h-20 nav bar
+    : 'pt-32'; // Initial state: padding for banner + h-20 nav bar
+  // --- END: DYNAMIC PADDING LOGIC ---
+
+
+  // --- OLD LOGIC (FOR REFERENCE) ---
+  // const topPaddingClass = isAdminPage ? '' : 'pt-30';
 
   return (
     <>
       {/* Conditionally render your main site header */}
       {!isAdminPage && <Header showTopBanner={true} />}
 
-      {/* Main content area with padding applied */}
-      <main className={topPaddingClass}> {/* Apply padding directly to main */}
-        {/* Removed the inner wrapper div */}
+      {/* Main content area with DYNAMIC padding applied */}
+      <main className={cn(
+        'transition-all duration-500', // Match header's collapse animation
+        topPaddingClass
+      )}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
