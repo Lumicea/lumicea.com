@@ -1,675 +1,553 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PlusCircle, Trash2, Image, XCircle, Loader2, Sparkles, Tag, Package, Settings, Search, Check, ChevronDown, Warehouse } from 'lucide-react';
 import { toast } from 'sonner';
-import { AlertCircle, Loader2, Plus, Trash2, X, GripVertical } from 'lucide-react';
-import { WysiwygEditor } from '@/components/ui/wysiwyg-editor'; // Assuming this exists
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/lib/supabase';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { cn } from '@/lib/utils';
+import _ from 'lodash';
 import { ImageUploader } from '@/components/admin/image-uploader'; // --- ADDED ---
 
-// (Keep existing interfaces: Variant, Category, Tag)
-// ...
-interface VariantOption {
-  name: string;
-  price_change: number;
-  is_sold_out: boolean;
-  images?: string[];
-  sku?: string;
-}
-
-interface Variant {
-  name: string;
-  options: VariantOption[];
-}
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-  color?: string;
-}
-
-interface Product {
-  id?: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  features: string | null;
-  care_instructions: string | null;
-  processing_times: string | null;
-  base_price: number;
-  compare_at_price: number | null;
-  cost_price: number | null;
-  sku_prefix: string | null;
-  quantity: number | null;
-  is_active: boolean;
-  is_featured: boolean;
-  is_made_to_order: boolean;
-  images: string[];
-  variants: Variant[];
-  // These will just hold the IDs for saving
-  category_ids: string[]; 
-  tag_ids: string[];
-}
-
-// ...
-// (Keep existing AdminProductEditorProps)
-interface AdminProductEditorProps {
-  productId?: string | null;
-  onSave: () => void;
-  onCancel: () => void;
-}
-
-const emptyProduct: Product = {
-  name: '',
-  slug: '',
-  description: '',
-  features: '',
-  care_instructions: '',
-  processing_times: '',
-  base_price: 0,
-  compare_at_price: null,
-  cost_price: null,
-  sku_prefix: '',
-  quantity: 0,
-  is_active: true,
-  is_featured: false,
-  is_made_to_order: false,
-  images: [],
-  variants: [],
-  category_ids: [],
-  tag_ids: [],
+// Helper to generate a URL-friendly slug
+const generateSlug = (name: string) => {
+    if (!name) return '';
+    return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').replace(/-+/g, '-');
 };
 
-// Simple slugify function
-function slugify(text: string): string {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')           // Replace spaces with -
-    .replace(/[^\w-]+/g, '')       // Remove all non-word chars
-    .replace(/--+/g, '-');          // Replace multiple - with single -
+// SKU generation logic
+const generateSkuPrefix = (productName: string) => {
+    const namePart = productName.substring(0, 4).toUpperCase().padEnd(4, 'X');
+    const randomNum = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+    return `${namePart}-${randomNum}`;
+};
+
+
+const defaultCareInstructions = `<h4>Sterling Silver & Argentium Silver</h4>
+<ul>
+  <li>Clean with a soft, lint-free cloth to remove tarnish and restore shine</li>
+  <li>For deeper cleaning, use a silver polishing cloth or mild silver cleaner</li>
+</ul>`;
+
+interface VariantOption { name: string; price_change: number; is_sold_out: boolean; images?: string[]; sku?: string; }
+interface Variant { name: string; options: VariantOption[]; }
+interface Product {
+  id: string; name: string; description: string | null; features: any; care_instructions: string | null; processing_times: string | null; base_price: number; slug: string; updated_at: string;
+  sku_prefix: string | null;
+  categories: string[]; // Array of category IDs
+  images: string[]; quantity: number | null; is_made_to_order: boolean; is_active: boolean; is_featured: boolean; created_at: string;
+  collections: string[]; // Array of collection IDs
+  tags: string[]; // Array of tag IDs
+  variants: Variant[]; // Array of variant objects
 }
+interface Category { id: string; name: string; }
+interface Tag { id: string; name: string; }
+interface Collection { id: string; collection_name: string; }
+type TaxonomyItem = { id: string; name: string; };
 
-export function AdminProductEditor({ productId, onSave, onCancel }: AdminProductEditorProps) {
-  const [product, setProduct] = useState<Product>(emptyProduct);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// TaxonomyManager component remains the same
+const TaxonomyManager = ({ title, items, selectedIds, onToggle, onAdd, placeholder }: { title: string; items: TaxonomyItem[]; selectedIds: string[]; onToggle: (id: string) => void; onAdd: (name: string) => Promise<void>; placeholder: string; }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [inputValue, setInputValue] = useState('');
+    const filteredItems = useMemo(() => items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())), [items, searchTerm]);
+    const handleAdd = async () => { if (inputValue.trim()) { await onAdd(inputValue.trim()); setInputValue(''); setSearchTerm(''); } };
+    return (
+        <div className="space-y-4 rounded-lg border bg-slate-50 p-4">
+            <Label className="font-semibold text-lg text-gray-800">{title}</Label>
+            <div className="flex space-x-2">
+                <Input placeholder={placeholder} value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }}} />
+                <Button type="button" onClick={handleAdd} style={{ backgroundColor: '#ddb866', color: '#0a0a4a' }} className="hover:bg-opacity-90">Add New</Button>
+            </div>
+             <div className="relative flex-grow"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><Input placeholder={`Search existing ${title.toLowerCase()}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" /></div>
+            <ScrollArea className="h-40 w-full rounded-md border p-2 bg-white"><div className="flex flex-wrap gap-2">{filteredItems.map(item => (<Badge key={item.id} onClick={() => onToggle(item.id)} className={`cursor-pointer transition-all text-sm py-1 px-3 ${selectedIds.includes(item.id) ? 'bg-[#0a0a4a] text-white hover:bg-[#0a0a4a]/90' : 'bg-white text-[#0a0a4a] border border-[#0a0a4a] hover:bg-[#0a0a4a]/10'}`}>{item.name}</Badge>))}</div></ScrollArea>
+        </div>
+    );
+};
 
-  // --- START: NEW STATE FOR IMAGES, CATEGORIES, AND TAGS ---
-  const [images, setImages] = useState<string[]>([]);
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
-  const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#6B7280'); // default gray
-  // --- END: NEW STATE ---
+const ProductEditor = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [initialProduct, setInitialProduct] = useState<Product | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [existingTags, setExistingTags] = useState<Tag[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [openVariantOptions, setOpenVariantOptions] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    if (product && initialProduct) {
+      setIsDirty(!_.isEqual(product, initialProduct));
+    }
+  }, [product, initialProduct]);
 
-  // Fetch existing product data
-  useEffect(() => {
-    // Reset state for 'new' product
-    if (!productId) {
-      setProduct(emptyProduct);
-      setImages([]); // --- ADDED ---
-      setSelectedCategoryIds(new Set()); // --- ADDED ---
-      setSelectedTagIds(new Set()); // --- ADDED ---
-      return;
-    }
+  useEffect(() => {
+    setLoading(true);
+    const fetchRelatedData = async () => {
+      try {
+        const [catRes, tagRes, colRes] = await Promise.all([
+          supabase.from('categories').select('id, name'),
+          supabase.from('tags').select('id, name'),
+          supabase.from('product_collections').select('id, collection_name')
+        ]);
+        if (catRes.error) throw new Error(`Could not fetch categories: ${catRes.error.message}`); setCategories(catRes.data);
+        if (tagRes.error) throw new Error(`Could not fetch tags: ${tagRes.error.message}`); setExistingTags(tagRes.data);
+        if (colRes.error) throw new Error(`Could not fetch collections: ${colRes.error.message}`); setCollections(colRes.data);
+      } catch (error: any) { toast.error(error.message); }
+    };
 
-    const fetchProduct = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          product_categories ( category_id ),
-          product_tags ( tag_id )
-        `)
-        .eq('id', productId)
-        .single();
+    if (id) {
+      const fetchProduct = async () => {
+        const { data: productData, error: productError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-      if (error || !data) {
-        toast.error(`Error fetching product: ${error?.message}`);
-        setError('Failed to load product data.');
-      } else {
-        const productData = {
-          ...data,
-          base_price: data.base_price || 0,
-          variants: data.variants || [],
-          images: data.images || [],
-          // Extract the IDs from the junction tables
-          category_ids: data.product_categories.map((pc: any) => pc.category_id),
-          tag_ids: data.product_tags.map((pt: any) => pt.tag_id),
-        };
-        setProduct(productData as Product);
+        if (productError) {
+          toast.error(`Error loading product: ${productError.message}`);
+          navigate('/admin/products');
+          return;
+        }
 
-        // --- POPULATE NEW STATE ---
-        setImages(productData.images);
-        setSelectedCategoryIds(new Set(productData.category_ids));
-        setSelectedTagIds(new Set(productData.tag_ids));
-      }
-      setLoading(false);
-    };
+        const [catLinks, colLinks, tagLinks] = await Promise.all([
+           supabase.from('product_categories').select('category_id').eq('product_id', id),
+           supabase.from('product_to_collection').select('collection_id').eq('product_id', id),
+           supabase.from('product_tags').select('tag_id').eq('product_id', id)
+        ]);
 
-    fetchProduct();
-  }, [productId]);
-  
-  // --- ADDED: Fetch all categories and tags on load ---
-  useEffect(() => {
-    const fetchMeta = async () => {
-      // Fetch Categories
-      const { data: categories, error: catError } = await supabase
-        .from('categories')
-        .select('id, name')
-        .order('name');
-      if (categories) setAllCategories(categories);
+        if (catLinks.error || colLinks.error || tagLinks.error) {
+             console.error("Error fetching product relations:", catLinks.error || colLinks.error || tagLinks.error);
+             toast.warning("Could not load all product relations (categories/tags/collections).");
+        }
 
-      // Fetch Tags
-      const { data: tags, error: tagError } = await supabase
-        .from('tags')
-        .select('id, name, slug, color')
-        .order('name');
-      if (tags) setAllTags(tags);
-    };
-    fetchMeta();
-  }, []);
+        const fetched = {
+            ...productData,
+            // **IMPORTANT**: Assuming your 'products' table *does* have a 'variants' JSONB column.
+            // If variants are stored elsewhere, adjust this line.
+            variants: productData.variants || [],
+            categories: catLinks.data?.map((c: any) => c.category_id) || [],
+            collections: colLinks.data?.map((c: any) => c.collection_id) || [],
+            tags: tagLinks.data?.map((t: any) => t.tag_id) || [],
+        };
+        setProduct(fetched);
+        setInitialProduct(_.cloneDeep(fetched));
+      };
+      Promise.all([fetchProduct(), fetchRelatedData()]).finally(() => setLoading(false));
+    } else {
+      // New product setup
+      const newProductData = {
+        id: uuidv4(), name: '', description: '', features: null, care_instructions: defaultCareInstructions,
+        processing_times: 'Usually ships in 3-5 business days.', base_price: 0, slug: '',
+        sku_prefix: generateSkuPrefix(''), variants: [], images: [], quantity: 0, is_made_to_order: false,
+        is_active: true, is_featured: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        categories: [], collections: [], tags: []
+      };
+      setProduct(newProductData);
+      setInitialProduct(_.cloneDeep(newProductData));
+      fetchRelatedData().finally(() => setLoading(false));
+    }
+  }, [id, navigate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setProduct(prev => {
+        if (!prev) return null;
+        const isNew = !id;
+        return {
+            ...prev,
+            name: newName,
+            sku_prefix: isNew && !prev.sku_prefix ? generateSkuPrefix(newName) : prev.sku_prefix
+        };
+    });
+  };
+
+  const handleCancel = () => {
+    if (isDirty) {
+      document.getElementById('cancel-alert-trigger')?.click();
+    } else {
+      navigate('/admin/products');
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { if (!product) return; const { name, value, type } = e.target; const isChecked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined; setProduct(prev => prev ? { ...prev, [name]: isChecked !== undefined ? isChecked : (name === 'base_price' || name === 'quantity' ? (value === '' ? null : parseFloat(value)) : value) } : null); };
+
+  const handleMultiSelectToggle = (field: 'collections' | 'tags' | 'categories', id: string) => {
+    if (!product) return;
+    setProduct(prev => {
+      if (!prev) return null;
+      const currentValues = prev[field];
+      const newValues = currentValues.includes(id) ? currentValues.filter(val => val !== id) : [...currentValues, id];
+      return { ...prev, [field]: newValues };
+    });
+  };
+
+  const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => {
+    if (!name.trim()) {
+      toast.warning(`Please enter a name for the new ${type}.`);
+      return;
+    }
+    let table = ''; let payload: any = {};
+    if (type === 'category') { table = 'categories'; payload = { name, slug: generateSlug(name) }; }
+    else if (type === 'tag') { table = 'tags'; payload = { name, slug: generateSlug(name) }; }
+    else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; }
+
+    const promise = supabase.from(table).insert([payload]).select().single();
+    toast.promise(promise, {
+      loading: `Adding new ${type}: "${name}"...`,
+      success: (result) => {
+          const data = result.data;
+          if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); }
+          else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); }
+          else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); }
+          return `Successfully added ${type}: "${name}"!`;
+      },
+      error: (error) => {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          return `A ${type} with the name "${name}" already exists.`;
+        }
+        return `Error creating ${type}: ${error.message}.`;
+      }
+    });
+  };
+
+  // Variant handlers (no changes)
+  const handleVariantChange = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex] = { ...newVariants[variantIndex], [name]: value }; return { ...prev, variants: newVariants }; }); };
+  const handleOptionChange = (variantIndex: number, optionIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value, type } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex] = { ...newOptions[optionIndex], [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (name === 'price_change' ? parseFloat(value) : value) }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; }); };
+  const addMasterVariant = () => { if (!product) return; setProduct(prev => prev ? ({ ...prev, variants: [...prev.variants, { name: '', options: [] }] }) : null); };
+  const addVariantOption = (variantIndex: number, name: string) => { if (!product || !name.trim()) return; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions.push({ name: name.trim(), price_change: 0, is_sold_out: false }); newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; }); setOpenVariantOptions(prev => ({ ...prev, [variantIndex]: false })); };
+  const removeMasterVariant = (variantIndex: number) => { if (!product) return; setProduct(prev => prev ? ({ ...prev, variants: prev.variants.filter((_, i) => i !== variantIndex) }) : null); };
+  const removeVariantOption = (variantIndex: number, optionIndex: number) => { if (!product) return; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex].options = newVariants[variantIndex].options.filter((_, i) => i !== optionIndex); return { ...prev, variants: newVariants }; }); };
+  
+  // --- START: Cloudinary Image Handlers (REPLACED old handlers) ---
     
-    // Handle slug generation automatically
-    if (name === 'name') {
-      setProduct(prev => ({
-        ...prev,
-        name: value,
-        slug: slugify(value), // Auto-update slug
-      }));
-    } else {
-      setProduct(prev => ({
-        ...prev,
-        [name]: type === 'number' ? parseFloat(value) || 0 : value,
-      }));
-    }
-  };
-
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setProduct(prev => ({
-      ...prev,
-      [name]: checked,
-      // If 'Made to Order' is checked, nullify quantity
-      ...(name === 'is_made_to_order' && checked && { quantity: null }),
-      // If 'Made to Order' is unchecked, set quantity to 0
-      ...(name === 'is_made_to_order' && !checked && { quantity: 0 }),
-    }));
+  // New handler for Master Image upload success
+  const handleMasterImageUploadSuccess = (url: string) => {
+    if (!product) return;
+    setProduct(prev => {
+      if (!prev) return null;
+      return { ...prev, images: [...prev.images, url] };
+    });
+    toast.success('Master image added!');
   };
   
-  const handleEditorChange = (name: string, content: string) => {
-    setProduct(prev => ({ ...prev, [name]: content }));
+  // New handler for Variant Image upload success
+  const handleVariantImageUploadSuccess = (url: string, variantIndex: number, optionIndex: number) => {
+    if (!product) return;
+    setProduct(prev => {
+      if (!prev) return null;
+      const newVariants = [...prev.variants];
+      const newOptions = [...newVariants[variantIndex].options];
+      const newImages = [...(newOptions[optionIndex].images || []), url];
+      newOptions[optionIndex] = { ...newOptions[optionIndex], images: newImages };
+      newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions };
+      return { ...prev, variants: newVariants };
+    });
+    toast.success('Variant image added!');
   };
-
-  // --- START: NEW IMAGE HANDLERS ---
-  const handleImageUploadSuccess = (url: string) => {
-    setImages(prev => [...prev, url]);
-    toast.success('Image added!');
-  };
-
-  const handleImageDelete = (urlToDelete: string) => {
-    setImages(prev => prev.filter(url => url !== urlToDelete));
+  
+  // This handler is modified slightly to add a toast, but logic is the same
+  const handleImageRemove = (imageToRemove: string, variantIndex?: number, optionIndex?: number) => {
+    if (!product) return;
+    setProduct(prev => {
+      if (!prev) return null;
+      if (variantIndex !== undefined && optionIndex !== undefined) {
+        const newVariants = [...prev.variants];
+        const newOptions = [...newVariants[variantIndex].options];
+        newOptions[optionIndex].images = (newOptions[optionIndex].images || []).filter(img => img !== imageToRemove);
+        newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions };
+        return { ...prev, variants: newVariants };
+      } else {
+        return { ...prev, images: prev.images.filter(img => img !== imageToRemove) };
+      }
+    });
     toast.info('Image removed.');
   };
-  // --- END: NEW IMAGE HANDLERS ---
   
-  // --- START: NEW CATEGORY/TAG HANDLERS ---
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategoryIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-  
-  const handleTagToggle = (tagId: string) => {
-    setSelectedTagIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(tagId)) {
-        newSet.delete(tagId);
-      } else {
-        newSet.add(tagId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleCreateNewTag = async () => {
-    if (!newTagName.trim()) {
-      toast.error('Tag name cannot be empty.');
-      return;
-    }
-    
-    const slug = slugify(newTagName);
-    
-    // Check if tag with this slug already exists
-    const { data: existing, error: checkError } = await supabase
-      .from('tags')
-      .select('id')
-      .eq('slug', slug)
-      .single();
-      
-    if (existing) {
-      toast.error('A tag with this name/slug already exists.');
-      return;
-    }
-
-    const { data: newTag, error } = await supabase
-      .from('tags')
-      .insert({
-        name: newTagName.trim(),
-        slug: slug,
-        color: newTagColor,
-      })
-      .select('id, name, slug, color')
-      .single();
-      
-    if (error) {
-      toast.error(`Failed to create tag: ${error.message}`);
-    } else if (newTag) {
-      toast.success(`Tag "${newTag.name}" created!`);
-      setAllTags(prev => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)));
-      // Automatically select the new tag
-      setSelectedTagIds(prev => new Set(prev).add(newTag.id));
-      setNewTagName('');
-    }
-  };
-  // --- END: NEW CATEGORY/TAG HANDLERS ---
-
-  // ... (Keep existing variant handlers: handleAddVariant, handleVariantChange, etc.) ...
-  // (These are complex and not related to the image upload, so we leave them as-is)
-  // ...
-
-  const handleSaveProduct = async () => {
-    setLoading(true);
-    setError(null);
-    
-    // Prepare the final product object for saving
-    const productToSave = {
-      ...product,
-      images: images, // Use the state-managed images
-      // We don't save category_ids or tag_ids directly to the products table
-      // So we remove them from the main object
-    };
-    // @ts-ignore
-    delete productToSave.category_ids;
-    // @ts-ignore
-    delete productToSave.tag_ids;
-    // @ts-ignore
-    delete productToSave.product_categories;
-    // @ts-ignore
-    delete productToSave.product_tags;
+  // --- END: Cloudinary Image Handlers ---
 
 
-    // 1. Upsert (Insert or Update) the product
-    let savedProductId = productId;
-    
-    if (productId) {
-      // Update existing product
-      const { error: productError } = await supabase
-        .from('products')
-        .update(productToSave)
-        .eq('id', productId);
-        
-      if (productError) {
-        toast.error(`Save failed: ${productError.message}`);
-        setError(productError.message);
-        setLoading(false);
-        return;
-      }
-    } else {
-      // Create new product and get its ID
-      const { data: newProduct, error: productError } = await supabase
-        .from('products')
-        .insert(productToSave)
-        .select('id')
-        .single();
-        
-      if (productError || !newProduct) {
-        toast.error(`Save failed: ${productError.message}`);
-        setError(productError.message);
-        setLoading(false);
-        return;
-      }
-      savedProductId = newProduct.id;
-    }
-    
-    if (!savedProductId) {
-       toast.error('Save failed: Could not get product ID.');
-       setLoading(false);
-       return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!product || !product.name) { toast.error("Product name is required."); return; }
+    setIsSaving(true);
 
-    // --- START: SYNC JUNCTION TABLES (CATEGORIES & TAGS) ---
+    // --- **CRITICAL FIX**: Destructure 'variants' out if it shouldn't be saved directly ---
+    // If your 'products' table *DOES NOT* have a 'variants' column, keep this line.
+    // If it *DOES* have a 'variants' JSONB column, you can remove 'variants' from this destructuring.
+    const { collections, tags, categories, variants, ...payload } = product;
+    payload.slug = generateSlug(payload.name);
+    payload.updated_at = new Date().toISOString();
 
-    // 2. Sync Categories
-    const categoryLinks = Array.from(selectedCategoryIds).map(catId => ({
-      product_id: savedProductId,
-      category_id: catId,
-    }));
-    // Remove all existing links for this product
-    const { error: deleteCatError } = await supabase
-      .from('product_categories')
-      .delete()
-      .eq('product_id', savedProductId);
-    if (deleteCatError) toast.error('Failed to clear old categories.');
-    // Add the new links
-    if (categoryLinks.length > 0) {
-      const { error: insertCatError } = await supabase
-        .from('product_categories')
-        .insert(categoryLinks);
-      if (insertCatError) toast.error('Failed to save categories.');
-    }
+    // --- REMOVED THE LINE ADDING variants BACK TO payload ---
+    // (payload as any).variants = variants; // REMOVE THIS LINE if 'products' table has no 'variants' column
 
-    // 3. Sync Tags
-    const tagLinks = Array.from(selectedTagIds).map(tagId => ({
-      product_id: savedProductId,
-      tag_id: tagId,
-    }));
-    // Remove all existing links
-    const { error: deleteTagError } = await supabase
-      .from('product_tags')
-      .delete()
-      .eq('product_id', savedProductId);
-    if (deleteTagError) toast.error('Failed to clear old tags.');
-    // Add new links
-    if (tagLinks.length > 0) {
-      const { error: insertTagError } = await supabase
-        .from('product_tags')
-        .insert(tagLinks);
-      if (insertTagError) toast.error('Failed to save tags.');
-    }
-    // --- END: SYNC JUNCTION TABLES ---
+    // **IMPORTANT**: If your 'products' table *DOES* have a 'variants' JSONB column,
+    // ensure it's included in the payload like this (adjust if needed):
+    // payload.variants = variants;
 
-    setLoading(false);
-    toast.success(`Product ${productId ? 'updated' : 'created'} successfully!`);
-    onSave(); // Call parent callback
-  };
 
-  if (loading && !product?.name) { // Show full page loader only on initial load
-    return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
-  
-  return (
-    <div className="max-w-4xl mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>{productId ? 'Edit Product' : 'Create New Product'}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {/* General Information */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">General Information</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Product Name</Label>
-                  <Input id="name" name="name" value={product.name} onChange={handleChange} placeholder="e.g., Gold Hoop Earrings" />
-                </div>
-                <div>
-                  <Label htmlFor="slug">Product Slug</Label>
-                  <Input id="slug" name="slug" value={product.slug} onChange={handleChange} placeholder="e.g., gold-hoop-earrings" />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Description (Full)</Label>
-                <WysiwygEditor
-                  id="description"
-                  value={product.description || ''}
-                  onChange={(content) => handleEditorChange('description', content)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+    if (payload.is_made_to_order) {
+      payload.quantity = null;
+    }
 
-          {/* --- START: NEW IMAGE UPLOADER SECTION --- */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">Product Images</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {images.map((url) => (
-                  <div key={url} className="relative group aspect-square rounded-md border bg-gray-50 overflow-hidden">
-                    <img
-                      src={url}
-                      alt="Product image"
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleImageDelete(url)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <ImageUploader 
-                onUploadSuccess={handleImageUploadSuccess}
-                folder="products" 
-              />
-            </CardContent>
-          </Card>
-          {/* --- END: NEW IMAGE UPLOADER SECTION --- */}
+    const savePromise = new Promise(async (resolve, reject) => {
+      try {
+          // Save main product data
+          const { data: savedProduct, error: productError } = id
+            ? await supabase.from('products').update(payload).eq('id', product.id).select().single()
+            : await supabase.from('products').insert(payload).select().single();
 
-          {/* Pricing */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">Pricing</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="base_price">Base Price (£)</Label>
-                <Input id="base_price" name="base_price" type="number" value={product.base_price} onChange={handleChange} placeholder="e.g., 49.99" />
-              </div>
-              <div>
-                <Label htmlFor="compare_at_price">Compare At Price (£) (Optional)</Label>
-                <Input id="compare_at_price" name="compare_at_price" type="number" value={product.compare_at_price || ''} onChange={handleChange} placeholder="e.g., 59.99" />
-              </div>
-              <div>
-                <Label htmlFor="cost_price">Cost Price (£) (Optional)</Label>
-                <Input id="cost_price" name="cost_price" type="number" value={product.cost_price || ''} onChange={handleChange} placeholder="e.g., 20.00" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Inventory */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">Inventory</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_made_to_order"
-                  checked={product.is_made_to_order}
-                  onCheckedChange={(checked) => handleSwitchChange('is_made_to_order', checked)}
-                />
-                <Label htmlFor="is_made_to_order">Made to Order (Disables quantity)</Label>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="sku_prefix">SKU Prefix (Optional)</Label>
-                  <Input id="sku_prefix" name="sku_prefix" value={product.sku_prefix || ''} onChange={handleChange} placeholder="e.g., LJH-" />
-                </div>
-                <div>
-                  <Label htmlFor="quantity">Quantity in Stock</Label>
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    value={product.quantity === null ? '' : product.quantity}
-                    onChange={handleChange}
-                    disabled={product.is_made_to_order}
-                    placeholder={product.is_made_to_order ? 'N/A (Made to Order)' : 'e.g., 100'}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          if (productError) throw productError; // Throw error to be caught by toast
+          if (!savedProduct) throw new Error("Unknown error saving product."); // Throw generic error
 
-          {/* Organization (Categories & Tags) --- THIS SECTION IS NEW/HEAVILY MODIFIED */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">Organization</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              {/* Categories */}
-              <div>
-                <Label className="font-semibold">Categories</Label>
-                <div className="mt-2 p-3 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-gray-50/50 space-y-2">
-                  {allCategories.length > 0 ? allCategories.map(cat => (
-                    <div key={cat.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`cat-${cat.id}`}
-                        checked={selectedCategoryIds.has(cat.id)}
-                        onChange={() => handleCategoryToggle(cat.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-lumicea-navy focus:ring-lumicea-gold"
-                      />
-                      <Label htmlFor={`cat-${cat.id}`} className="font-normal">{cat.name}</Label>
-                    </div>
-                  )) : <p className="text-sm text-gray-500">No categories found.</p>}
-                </div>
-              </div>
-              
-              {/* Tags */}
-              <div>
-                <Label className="font-semibold">Tags</Label>
-                <div className="mt-2 p-3 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-gray-50/50 space-y-2">
-                  {allTags.length > 0 ? allTags.map(tag => (
-                    <div key={tag.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`tag-${tag.id}`}
-                        checked={selectedTagIds.has(tag.id)}
-                        onChange={() => handleTagToggle(tag.id)}
-                        className="h-4 w-4 rounded border-gray-300 text-lumicea-navy focus:ring-lumicea-gold"
-                      />
-                      <Label htmlFor={`tag-${tag.id}`} className="font-normal flex items-center">
-                        <span className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: tag.color || '#6B7280' }}></span>
-                        {tag.name}
-                      </Label>
-                    </div>
-                  )) : <p className="text-sm text-gray-500">No tags found. Create one below.</p>}
-                </div>
-              </div>
-              
-              {/* Create New Tag */}
-              <div>
-                <Label className="font-semibold">Create New Tag</Label>
-                <div className="mt-2 flex items-center gap-2 p-3 rounded-md border border-gray-200">
-                  <Input
-                    type="color"
-                    value={newTagColor}
-                    onChange={(e) => setNewTagColor(e.target.value)}
-                    className="w-12 h-10 p-1"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="New tag name (e.g., Best Seller)"
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" onClick={handleCreateNewTag} className="shrink-0">
-                    <Plus className="h-4 w-4 mr-2" /> Create
-                  </Button>
-                </div>
-              </div>
+          // Save relationships
+          const relationalTables = [
+            { name: 'product_categories', ids: categories, column: 'category_id' },
+            { name: 'product_to_collection', ids: collections, column: 'collection_id' },
+            { name: 'product_tags', ids: tags, column: 'tag_id' }
+          ];
 
-            </CardContent>
-          </Card>
-          
-          {/* Other Details */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">Other Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="features">Features (HTML)</Label>
-                <WysiwygEditor
-                  id="features"
-                  value={product.features || ''}
-                  onChange={(content) => handleEditorChange('features', content)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="care_instructions">Care Instructions (HTML)</Label>
-                <WysiwygEditor
-                  id="care_instructions"
-                  value={product.care_instructions || ''}
-                  onChange={(content) => handleEditorChange('care_instructions', content)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="processing_times">Processing Times (HTML)</Label>
-                 <WysiwygEditor
-                  id="processing_times"
-                  value={product.processing_times || ''}
-                  onChange={(content) => handleEditorChange('processing_times', content)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Status */}
-          <Card className="border-gray-300">
-            <CardHeader><CardTitle className="text-lg">Status</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_active"
-                  checked={product.is_active}
-                  onCheckedChange={(checked) => handleSwitchChange('is_active', checked)}
-                />
-                <Label htmlFor="is_active">Active (Visible on storefront)</Label>
-              </div>
-               <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_featured"
-                  checked={product.is_featured}
-                  onCheckedChange={(checked) => handleSwitchChange('is_featured', checked)}
-                />
-                <Label htmlFor="is_featured">Featured (Show on homepage)</Label>
-              </div>
-            </CardContent>
-          </Card>
+          for (const table of relationalTables) {
+              // Delete existing relations first
+              const { error: deleteError } = await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
+              if (deleteError) {
+                  // Log but potentially continue? Or reject here? Depends on desired behavior.
+                  console.error(`Error deleting existing ${table.name}:`, deleteError);
+                  // Optionally reject to show a specific error:
+                  // reject(new Error(`Failed to clear old ${table.name.replace(/_/g, ' ')}.`)); return;
+              }
 
-          {/* (Variants section would go here - unchanged from your original) */}
+              // Insert new relations if any exist
+              if (table.ids.length > 0) {
+                  const toInsert = table.ids.map(relId => ({ product_id: savedProduct.id, [table.column]: relId }));
+                  const { error: insertError } = await supabase.from(table.name).insert(toInsert);
+                  if (insertError) {
+                      reject(new Error(`Error saving ${table.name.replace(/_/g, ' ')}: ${insertError.message}`));
+                      return; // Stop processing on first relation error
+                  }
+              }
+          }
+          resolve(savedProduct); // Resolve with the saved product data if everything succeeded
+      } catch (error) {
+          reject(error); // Reject the promise if any error occurred
+      }
+    });
 
-        </CardContent>
-        <CardFooter>
-          <div className="flex w-full justify-end space-x-4">
-            {error && <p className="text-sm text-red-600 flex items-center mr-auto"><AlertCircle className="h-4 w-4 mr-2" />{error}</p>}
-            <Button variant="outline" onClick={onCancel} disabled={loading}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveProduct} disabled={loading} className="lumicea-button-primary">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (productId ? 'Save Changes' : 'Create Product')}
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
-  );
-}
+    toast.promise(savePromise, {
+        loading: `${id ? 'Updating' : 'Creating'} product "${product.name}"...`,
+        success: (savedData: any) => {
+          // Update initial state only after successful save
+          const updatedProductState = { ...product, id: savedData.id, slug: savedData.slug, updated_at: savedData.updated_at }; // Ensure we capture generated slug/id
+          setInitialProduct(_.cloneDeep(updatedProductState));
+          setIsDirty(false);
+          setTimeout(() => navigate('/admin/products'), 1000); // Navigate after success message shows
+          return `Product "${savedData.name}" ${id ? 'updated' : 'created'} successfully! 🎉`;
+        },
+        error: (error: any) => {
+          console.error("Save Error Details:", error); // Keep console log for debugging
+          setIsSaving(false); // **Ensure isSaving is reset on error**
+          // Provide more specific feedback based on common errors
+          if (error.message.includes('duplicate key value violates unique constraint')) { return "Save Failed: A product with this name or slug might already exist.";
+          } else if (error.message.includes('violates foreign key constraint')) { return `Save Failed: A selected category, tag, or collection might no longer exist.`;
+          } else if (error.message.includes('violates check constraint') || error.code === '22P02') { return `Save Failed: Check fields like price or quantity for invalid values.`;
+          } else if (error.message.startsWith('Error saving')) { return error.message; // Show specific relation error from the promise rejection
+          } else if (error.message.includes("Could not find the 'variants' column")) { return "Save Failed: Internal configuration error regarding product variants. Please contact support."; // User-friendly message for the specific error
+          } else { return `An unexpected error occurred: ${error.message}. Check console.`; }
+        },
+    });
+  };
+
+
+  if (loading || !product) { return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-gray-500" /><p className="ml-4">Loading Product Editor...</p></div>; }
+
+  return (
+    <div className="bg-gray-50/50 min-h-screen">
+      <form onSubmit={handleSubmit}>
+        <div className="max-w-5xl mx-auto p-4 md:p-8">
+            <div className="flex justify-between items-center mb-8"><div><h1 className="text-3xl font-bold text-gray-900">{!id ? 'Create New Product' : 'Edit Product'}</h1>{id && <p className="text-sm text-gray-500">Editing: {product.name}</p>}</div>
+                <div className="flex space-x-2">
+                    <AlertDialog><AlertDialogTrigger asChild><Button id="cancel-alert-trigger" variant="ghost" className="hidden"></Button></AlertDialogTrigger>
+                        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Discard Unsaved Changes?</AlertDialogTitle><AlertDialogDescription>You have made changes that have not been saved. Are you sure you want to leave?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Stay on Page</AlertDialogCancel><AlertDialogAction onClick={() => navigate('/admin/products')}>Discard Changes</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                    <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
+                    <Button type="submit" disabled={isSaving || !isDirty} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button>
+              _</div>
+            </div>
+            <div className="grid grid-cols-1 gap-8">
+                {/* Details Card */}
+                <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#ddb866]" />Details & Descriptions</CardTitle></CardHeader>
+                    <CardContent className="space-y-6 pt-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="space-y-2"><Label htmlFor="name">Product Title</Label><Input id="name" name="name" value={product.name} onChange={handleNameChange} required/></div> {/* Added required */}
+                            <div className="space-y-2"><Label htmlFor="sku_prefix">SKU Prefix</Label><Input id="sku_prefix" name="sku_prefix" value={product.sku_prefix || ''} readOnly disabled className="bg-gray-100" /></div>
+                        </div>
+                        <div className="space-y-2"><Label htmlFor="base_price">Base Price (£)</Label><Input id="base_price" name="base_price" type="number" step="0.01" min="0" value={product.base_price} onChange={handleChange} required/></div> {/* Added required & min */}
+_                       <div className="space-y-2"><Label htmlFor="description">Description</Label><Textarea id="description" name="description" value={product.description || ''} onChange={handleChange} rows={6} /></div>
+                        <div className="space-y-2"><Label htmlFor="features">Features</Label><Textarea id="features" name="features" value={product.features || ''} onChange={handleChange} rows={6} placeholder="Use HTML for formatting if needed." /></div>
+t                     <div className="space-y-2"><Label htmlFor="care_instructions">Care Instructions</Label><Textarea id="care_instructions" name="care_instructions" value={product.care_instructions || ''} onChange={handleChange} rows={10} /></div>
+                        <div className="space-y-2"><Label htmlFor="processing_times">Processing Times</Label><Textarea id="processing_times" name="processing_times" value={product.processing_times || ''} onChange={handleChange} rows={2} /></div>
+                    </CardContent>
+                </Card>
+
+                {/* Inventory Card */}
+                <Card className="shadow-sm">
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Warehouse className="h-5 w-5 text-[#ddb866]" />Inventory</CardTitle></CardHeader>
+                    <CardContent className="space-y-6 pt-6">
+                        <div className="flex items-center space-x-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <Checkbox
+                                id="is_made_to_order"
+                                name="is_made_to_order"
+                                checked={product.is_made_to_order}
+                                onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_made_to_order: checked as boolean, quantity: checked ? null : (prev.quantity ?? 0) }) : null)}
+                            />
+                	        <Label htmlFor="is_made_to_order" className="text-sm font-medium">
+                                This product is Made to Order
+                                <p className="text-xs font-normal text-gray-600">If checked, stock quantity will not be tracked.</p>
+                            </Label>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="quantity" className={cn(product.is_made_to_order && "text-gray-400")}>Stock Quantity</Label>
+                            <Input
+                                id="quantity"
+                	            name="quantity"
+            	                type="number"
+                                step="1"
+                  	          min="0"
+                    	        value={product.quantity ?? ''}
+                	            onChange={handleChange}
+    	                        disabled={product.is_made_to_order}
+        	                    placeholder={product.is_made_to_order ? "N/A (Made to Order)" : "Enter stock level..."}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+      	        {/* Organization Card */}
+                <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5 text-[#ddb866]" />Organization</CardTitle></CardHeader>
+                    <CardContent className="space-y-8 pt-6">
+                        <TaxonomyManager title="Categories" items={categories} selectedIds={product.categories} onToggle={(id) => handleMultiSelectToggle('categories', id)} onAdd={(name) => handleAddNewItem('category', name)} placeholder="Create a new category..."/>
+                        <TaxonomyManager title="Collections" items={collections.map(c => ({ id: c.id, name: c.collection_name }))} selectedIds={product.collections} onToggle={(id) => handleMultiSelectToggle('collections', id)} onAdd={(name) => handleAddNewItem('collection', name)} placeholder="Create a new collection..."/>
+            	          <TaxonomyManager title="Tags" items={existingTags} selectedIds={product.tags} onToggle={(id) => handleMultiSelectToggle('tags', id)} onAdd={(name) => handleAddNewItem('tag', name)} placeholder="Create a new tag..."/>
+          	        </CardContent>
+          	  </Card>
+
+                {/* Images & Variants Card */}
+                <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Image className="h-5 w-5 text-[#ddb866]" />Images & Variants</CardTitle></CardHeader>
+                    <CardContent className="space-y-8 pt-6">
+                        {/* --- START: Master Images UI (REPLACED) --- */}
+                        <div className="space-y-4">
+                          <Label className="text-lg font-semibold text-gray-800">Master Images</Label>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                            {product.images.map((url) => (
+                              <div key={url} className="relative group aspect-square rounded-md border bg-gray-50 overflow-hidden">
+                                <img
+                                  src={url}
+                                  alt="Product image"
+                                  className="w-full h-full object-cover"
+                                />
+                                <Button
+                                  type="button" 
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleImageRemove(url)} 
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                          <ImageUploader 
+                            onUploadSuccess={handleMasterImageUploadSuccess}
+                            folder="products" 
+                          />
+                        </div>
+                        {/* --- END: Master Images UI (REPLACED) --- */}
+
+                        {/* Variants Section */}
+            	          <div className="space-y-6"><Label className="text-lg font-semibold text-gray-800">Product Variants</Label>
+                            {product.variants.map((variant, variantIndex) => (
+                	            <div key={variantIndex} className="bg-gray-50 border border-gray-200 p-4 rounded-lg space-y-4">
+          	                    <div className="flex items-center space-x-4"><Input id={`variant-name-${variantIndex}`} name="name" value={variant.name} onChange={(e) => handleVariantChange(variantIndex, e)} className="flex-grow" placeholder="e.g., Color, Size, Material"/><Button type="button" variant="ghost" size="icon" onClick={() => removeMasterVariant(variantIndex)}><Trash2 className="h-5 w-5 text-red-500" /></Button></div>
+                	            <div className="space-y-3 pl-2 border-l-2 border-gray-200"><div className="flex items-center justify-between"><Label className="text-sm font-medium">Variant Options</Label>
+                  	              <Popover open={openVariantOptions[variantIndex]} onOpenChange={(open) => setOpenVariantOptions(prev => ({ ...prev, [variantIndex]: open }))}><PopoverTrigger asChild><Button type="button" variant="outline" size="sm"><PlusCircle className="h-4 w-4 mr-2" />Add Option</Button></PopoverTrigger>
+              	                    <PopoverContent className="w-80 p-0"><div className="p-2 flex space-x-2"><Input placeholder="Add new option name..." onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addVariantOption(variantIndex, e.currentTarget.value); e.currentTarget.value = ''; } }}/><Button type='button' onClick={() => { const input = document.querySelector<HTMLInputElement>(`input[placeholder="Add new option name..."]`); if(input) { addVariantOption(variantIndex, input.value); input.value = ''; }}}>Add</Button></div></PopoverContent>
+              	                </Popover></div>
+                	              {variant.options.map((option, optionIndex) => (
+                  	              <div key={optionIndex} className="bg-white p-3 rounded-md border"><div className="flex items-center space-x-2 mb-2"><Input type="text" name="name" value={option.name} onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)} className="flex-grow"/><Button type="button" variant="ghost" size="icon" onClick={() => removeVariantOption(variantIndex, optionIndex)}><Trash2 className="h-4 w-4 text-gray-500" /></Button></div>
+  	                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><div className="space-y-1"><Label className="text-xs text-gray-500">Price Change (£)</Label><Input type="number" step="0.01" name="price_change" value={option.price_change} onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)} placeholder="0.00"/></div><div className="space-y-1"><Label className="text-xs text-gray-500">SKU</Label><Input type="text" name="sku" value={option.sku || ''} onChange={(e) => handleOptionChange(variantIndex, optionIndex, e)} placeholder="SKU-123"/></div></div>
+                        	          <div className="flex items-center space-x-2 mt-2"><Checkbox id={`sold-out-${variantIndex}-${optionIndex}`} name="is_sold_out" checked={option.is_sold_out} onCheckedChange={(checked) => handleOptionChange(variantIndex, optionIndex, { target: { name: 'is_sold_out', checked } } as any)}/><Label htmlFor={`sold-out-${variantIndex}-${optionIndex}`} className="text-sm">Mark as Sold Out</Label></div>
+                        	          
+                                {/* --- START: Variant Images UI (REPLACED) --- */}
+                                <div className="mt-4 space-y-2">
+                                  <Label className="text-sm font-medium">Option Images</Label>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {(option.images || []).map((url) => (
+                                      <div key={url} className="relative group w-16 h-16 rounded-md border bg-gray-50 overflow-hidden">
+                                        <img
+                                          src={url}
+                                          alt="Variant image"
+                                          className="w-full h-full object-cover"
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="destructive"
+                                          size="icon"
+                                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          onClick={() => handleImageRemove(url, variantIndex, optionIndex)}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <ImageUploader 
+                                    onUploadSuccess={(url) => handleVariantImageUploadSuccess(url, variantIndex, optionIndex)}
+                                    folder="products/variants" 
+                                  />
+                                </div>
+                                {/* --- END: Variant Images UI (REPLACED) --- */}
+
+                        	        </div>
+                	              ))}
+          	              </div>
+            	            </div>
+              	        ))}
+                  	    <Button type="button" variant="outline" onClick={addMasterVariant} className="w-full border-dashed text-gray-500 hover:text-gray-800"><PlusCircle className="h-4 w-4 mr-2" />Add New Variant Type</Button>
+            	      </div>
+            	  </CardContent>
+          	  </Card>
+
+                 {/* Settings Card */}
+                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5 text-[#ddb866]" />Settings</CardTitle></CardHeader>
+    	            <CardContent className="flex items-center space-x-6 pt-6">
+          	          <div className="flex items-center space-x-2"><Checkbox id="active" name="is_active" checked={product.is_active} onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_active: checked as boolean }) : null)}/><Label htmlFor="active" className="text-sm font-medium">Product is Active</Label></div>
+      	            <div className="flex items-center space-x-2"><Checkbox id="featured" name="is_featured" checked={product.is_featured} onCheckedChange={(checked) => setProduct(prev => prev ? ({ ...prev, is_featured: checked as boolean }) : null)}/><Label htmlFor="featured" className="text-sm font-medium">Featured Product</Label></div>
+          	      </CardContent>
+            	  </Card>
+          	</div>
+            {/* Save Button Area */}
+            <div className="pt-8 flex justify-end space-x-4 border-t mt-8"><Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button><Button type="submit" disabled={isSaving || !isDirty} style={{ backgroundColor: '#0a0a4a', color: 'white' }} className="hover:bg-opacity-90">{isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Product'}</Button></div>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export { ProductEditor };
