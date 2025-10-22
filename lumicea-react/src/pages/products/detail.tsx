@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Header } from '@/components/layout/header';
-import { Footer } from '@/components/layout/footer';
+// --- REMOVED Header and Footer imports ---
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Heart } from 'lucide-react';
@@ -225,6 +224,7 @@ export function ProductDetailPage() {
 
   if (loading) {
     return (
+      // --- MODIFIED: Removed <Header> from loading state ---
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0a0a4a]"></div>
       </div>
@@ -233,8 +233,8 @@ export function ProductDetailPage() {
 
   if (!product) {
     return (
+      // --- MODIFIED: Removed <Header> and <Footer> from not-found state ---
       <div className="min-h-screen flex flex-col">
-        <Header />
         <main className="flex-grow flex items-center justify-center text-center bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-4xl font-bold mb-4 text-[#0a0a4a]">Product Not Found</h1>
@@ -244,7 +244,6 @@ export function ProductDetailPage() {
             </Button>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -259,8 +258,9 @@ export function ProductDetailPage() {
   const isSoldOut = !product.is_made_to_order && (product.quantity === null || product.quantity < 1);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 font-inter">
-      <Header />
+    // --- MODIFIED: Removed <Header> and <Footer> and root div ---
+    // The <main> tag from App.tsx now directly wraps this content
+    <div className="bg-gray-50 font-inter">
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
@@ -418,7 +418,6 @@ export function ProductDetailPage() {
           <ProductCarousel title="You Might Also Like" products={recommendedProducts} />
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
