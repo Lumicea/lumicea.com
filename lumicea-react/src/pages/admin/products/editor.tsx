@@ -44,7 +44,6 @@ interface Variant { name: string; options: VariantOption[]; }
 interface Product {
   id: string; name: string; description: string | null; features: any; care_instructions: string | null; processing_times: string | null; base_price: number; slug: string; updated_at: string;
   sku_prefix: string | null;
-  // --- MODIFIED: Changed category_id to categories array ---
   categories: string[];
   images: string[]; quantity: number | null; is_made_to_order: boolean; is_active: boolean; is_featured: boolean; created_at: string;
   collections: string[]; tags: string[]; variants: Variant[];
@@ -54,7 +53,7 @@ interface Tag { id: string; name: string; }
 interface Collection { id: string; collection_name: string; }
 type TaxonomyItem = { id: string; name: string; };
 
-// TaxonomyManager component remains the same, it's perfect for the new category system
+// TaxonomyManager component remains the same
 const TaxonomyManager = ({ title, items, selectedIds, onToggle, onAdd, placeholder }: { title: string; items: TaxonomyItem[]; selectedIds: string[]; onToggle: (id: string) => void; onAdd: (name: string) => Promise<void>; placeholder: string; }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [inputValue, setInputValue] = useState('');
@@ -85,7 +84,6 @@ const ProductEditor = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [openVariantOptions, setOpenVariantOptions] = useState<Record<string, boolean>>({});
-  // Removed categoryInput, as TaxonomyManager handles its own input
 
   useEffect(() => {
     if (product && initialProduct) {
@@ -106,7 +104,6 @@ const ProductEditor = () => {
 
     if (id) {
       const fetchProduct = async () => {
-        // --- MODIFIED: Fetching from join tables for categories, collections, and tags ---
         const { data, error } = await supabase.from('products').select(`
           *,
           product_categories(category_id),
@@ -119,7 +116,7 @@ const ProductEditor = () => {
           const fetched = {
             ...data,
             variants: data.variants || [],
-            categories: data.product_categories.map((c: any) => c.category_id), // <-- FIXED
+            categories: data.product_categories.map((c: any) => c.category_id),
             collections: data.product_to_collection.map((c: any) => c.collection_id),
             tags: data.product_tags.map((t: any) => t.tag_id),
           };
@@ -129,13 +126,12 @@ const ProductEditor = () => {
       };
       Promise.all([fetchProduct(), fetchRelatedData()]).finally(() => setLoading(false));
     } else {
-      // --- MODIFIED: New product data structure ---
       const newProductData = {
         id: uuidv4(), name: '', description: '', features: null, care_instructions: defaultCareInstructions,
         processing_times: 'Usually ships in 3-5 business days.', base_price: 0, slug: '',
         sku_prefix: generateSkuPrefix(''), variants: [], images: [], quantity: 0, is_made_to_order: false,
         is_active: true, is_featured: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-        categories: [], // <-- FIXED
+        categories: [],
         collections: [], tags: []
       };
       setProduct(newProductData);
@@ -149,7 +145,6 @@ const ProductEditor = () => {
     setProduct(prev => {
         if (!prev) return null;
         const isNew = !id;
-        // Simplified SKU generation, only happens on create
         return {
             ...prev,
             name: newName,
@@ -157,8 +152,6 @@ const ProductEditor = () => {
         };
     });
   };
-
-  // --- REMOVED handleCategoryChange ---
 
   const handleCancel = () => {
     if (isDirty) {
@@ -170,7 +163,6 @@ const ProductEditor = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { if (!product) return; const { name, value, type } = e.target; const isChecked = type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined; setProduct(prev => prev ? { ...prev, [name]: isChecked !== undefined ? isChecked : (name === 'base_price' || name === 'quantity' ? (value === '' ? null : parseFloat(value)) : value) } : null); };
 
-  // --- MODIFIED: handleMultiSelectToggle now handles 'categories' ---
   const handleMultiSelectToggle = (field: 'collections' | 'tags' | 'categories', id: string) => {
     if (!product) return;
     setProduct(prev => {
@@ -181,7 +173,30 @@ const ProductEditor = () => {
     });
   };
 
-  const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => { if (!name) return; let table = ''; let payload: any = {}; if (type === 'category') { table = 'categories'; payload = { name, slug: generateSlug(name) }; } else if (type === 'tag') { table = 'tags'; payload = { name, slug: generateSlug(name) }; } else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; } const { data, error } = await supabase.from(table).insert([payload]).select().single(); if (error) { toast.error(`Error creating ${type}: ${error.message}.`); } else if (data) { toast.success(`Successfully added ${type}: "${name}".`); if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); } else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); } else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); } } };
+  const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => {
+    if (!name) {
+      toast.warning(`Please enter a name for the new ${type}.`);
+      return;
+    }
+    let table = ''; let payload: any = {};
+    if (type === 'category') { table = 'categories'; payload = { name, slug: generateSlug(name) }; }
+    else if (type === 'tag') { table = 'tags'; payload = { name, slug: generateSlug(name) }; }
+    else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; }
+
+    const { data, error } = await supabase.from(table).insert([payload]).select().single();
+    if (error) {
+      if (error.message.includes('duplicate key value violates unique constraint')) {
+        toast.error(`A ${type} with the name "${name}" already exists.`);
+      } else {
+        toast.error(`Error creating ${type}: ${error.message}.`);
+      }
+    } else if (data) {
+      toast.success(`Successfully added ${type}: "${name}".`);
+      if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); }
+      else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); }
+      else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); }
+    }
+  };
   const handleVariantChange = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex] = { ...newVariants[variantIndex], [name]: value }; return { ...prev, variants: newVariants }; }); };
   const handleOptionChange = (variantIndex: number, optionIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value, type } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex] = { ...newOptions[optionIndex], [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (name === 'price_change' ? parseFloat(value) : value) }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; }); };
   const addMasterVariant = () => { if (!product) return; setProduct(prev => prev ? ({ ...prev, variants: [...prev.variants, { name: '', options: [] }] }) : null); };
@@ -196,48 +211,59 @@ const ProductEditor = () => {
     if (!product || !product.name) { toast.error("Product name is required."); return; }
     setIsSaving(true);
 
-    // --- **CRITICAL FIX**: Destructure 'categories' out of the payload ---
+    // --- **CRITICAL FIX**: Destructure 'categories' AND 'variants' out of the payload ---
     const { collections, tags, categories, variants, ...payload } = product;
     payload.slug = generateSlug(payload.name); payload.updated_at = new Date().toISOString();
 
-    // --- If Made to Order, force quantity to null ---
+    // Add variants data back into the payload under the correct field name if your table uses JSONB for variants.
+    // **IMPORTANT**: If your 'products' table *doesn't* have a 'variants' column (e.g., you handle variants in a separate 'product_variants' table),
+    // you should REMOVE the line below and handle variant saving separately after saving the main product.
+    // Assuming your 'products' table has a 'variants' JSONB column:
+    (payload as any).variants = variants; // Add variants back into the payload
+
+
+    // If Made to Order, force quantity to null
     if (payload.is_made_to_order) {
       payload.quantity = null;
     }
 
     try {
-        // This part saves the main product data (everything EXCEPT the categories/tags/collections arrays)
         const { data: savedProduct, error: productError } = id ? await supabase.from('products').update(payload).eq('id', product.id).select().single() : await supabase.from('products').insert(payload).select().single();
         if (productError) throw productError;
         if (!savedProduct) throw new Error("An unknown error occurred while saving the product.");
 
-        // --- MODIFIED: Relational tables now includes 'product_categories' ---
+        // Relational tables handling remains the same
         const relationalTables = [
-          { name: 'product_categories', ids: categories, column: 'category_id' }, // Handles categories
+          { name: 'product_categories', ids: categories, column: 'category_id' },
           { name: 'product_to_collection', ids: collections, column: 'collection_id' },
           { name: 'product_tags', ids: tags, column: 'tag_id' }
         ];
 
-        // This loop handles saving the connections in the join tables
         for (const table of relationalTables) {
-            // Delete existing connections first
             await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
-            // Insert the new connections
             if (table.ids.length > 0) {
                 const toInsert = table.ids.map(relId => ({ product_id: savedProduct.id, [table.column]: relId }));
                 const { error } = await supabase.from(table.name).insert(toInsert);
-                if (error) throw new Error(`Error saving relationships for ${table.name}: ${error.message}`);
+                if (error) {
+                  // Provide more specific error for relational saves
+                  toast.error(`Error saving ${table.name.replace(/_/g, ' ')}: ${error.message}`);
+                  // Optionally throw the error again if you want to stop the whole process
+                  // throw new Error(`Error saving relationships for ${table.name}: ${error.message}`);
+                  continue; // Or continue to try saving other relations
+                }
             }
         }
-        toast.success(`Product "${savedProduct.name}" saved successfully!`);
-        setInitialProduct(_.cloneDeep(product)); // Update initial state after successful save
-        setIsDirty(false); // Reset dirty state
+        toast.success(`Product "${savedProduct.name}" ${id ? 'updated' : 'created'} successfully!`);
+        setInitialProduct(_.cloneDeep(product)); // Update initial state
+        setIsDirty(false); // Reset dirty flag
         navigate('/admin/products');
     } catch (error: any) {
+        console.error("Save Error Details:", error); // Log the full error object
         if (error.message.includes('duplicate key value violates unique constraint')) { toast.error("Save Failed: A product with this name or slug already exists.");
-        } else if (error.message.includes('violates foreign key constraint')) { toast.error(`Save Failed: A database relationship is incorrect.`);
-        } else if (error.message.includes('violates check constraint')) { toast.error(`Save Failed: A field does not meet database requirements.`);
-        } else { toast.error(`An unexpected database error occurred: ${error.message}`); console.error("Save Error Details:", error);} // Added console log
+        } else if (error.message.includes('violates foreign key constraint')) { toast.error(`Save Failed: A database relationship is incorrect (e.g., a selected category/tag/collection might no longer exist).`);
+        } else if (error.message.includes('violates check constraint') || error.code === '22P02') { // 22P02 is often invalid input syntax
+            toast.error(`Save Failed: A field (like price or quantity) has an invalid value.`);
+        } else { toast.error(`An unexpected database error occurred. Check console for details.`); }
     } finally { setIsSaving(false); }
   };
 
