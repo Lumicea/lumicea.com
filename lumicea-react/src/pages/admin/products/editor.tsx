@@ -44,9 +44,11 @@ interface Variant { name: string; options: VariantOption[]; }
 interface Product {
   id: string; name: string; description: string | null; features: any; care_instructions: string | null; processing_times: string | null; base_price: number; slug: string; updated_at: string;
   sku_prefix: string | null;
-  categories: string[];
+  categories: string[]; // Array of category IDs
   images: string[]; quantity: number | null; is_made_to_order: boolean; is_active: boolean; is_featured: boolean; created_at: string;
-  collections: string[]; tags: string[]; variants: Variant[];
+  collections: string[]; // Array of collection IDs
+  tags: string[]; // Array of tag IDs
+  variants: Variant[]; // Array of variant objects
 }
 interface Category { id: string; name: string; }
 interface Tag { id: string; name: string; }
@@ -95,44 +97,66 @@ const ProductEditor = () => {
     setLoading(true);
     const fetchRelatedData = async () => {
       try {
-        const [catRes, tagRes, colRes] = await Promise.all([ supabase.from('categories').select('id, name'), supabase.from('tags').select('id, name'), supabase.from('product_collections').select('id, collection_name') ]);
-        if (catRes.error) throw new Error("Could not fetch categories."); setCategories(catRes.data);
-        if (tagRes.error) throw new Error("Could not fetch tags."); setExistingTags(tagRes.data);
-        if (colRes.error) throw new Error("Could not fetch collections."); setCollections(colRes.data);
+        const [catRes, tagRes, colRes] = await Promise.all([
+          supabase.from('categories').select('id, name'),
+          supabase.from('tags').select('id, name'),
+          supabase.from('product_collections').select('id, collection_name')
+        ]);
+        if (catRes.error) throw new Error(`Could not fetch categories: ${catRes.error.message}`); setCategories(catRes.data);
+        if (tagRes.error) throw new Error(`Could not fetch tags: ${tagRes.error.message}`); setExistingTags(tagRes.data);
+        if (colRes.error) throw new Error(`Could not fetch collections: ${colRes.error.message}`); setCollections(colRes.data);
       } catch (error: any) { toast.error(error.message); }
     };
 
     if (id) {
       const fetchProduct = async () => {
-        const { data, error } = await supabase.from('products').select(`
-          *,
-          product_categories(category_id),
-          product_to_collection(collection_id),
-          product_tags(tag_id)
-        `).eq('id', id).single();
+        // --- **CRITICAL FIX**: Simplified the main product fetch ---
+        // We fetch relations separately now to avoid schema cache issues.
+        const { data: productData, error: productError } = await supabase
+            .from('products')
+            .select('*') // Select all columns from the products table itself
+            .eq('id', id)
+            .single();
 
-        if (error) { toast.error(`Error loading product: ${error.message}`); navigate('/admin/products');
-        } else {
-          const fetched = {
-            ...data,
-            variants: data.variants || [],
-            categories: data.product_categories.map((c: any) => c.category_id),
-            collections: data.product_to_collection.map((c: any) => c.collection_id),
-            tags: data.product_tags.map((t: any) => t.tag_id),
-          };
-          setProduct(fetched);
-          setInitialProduct(_.cloneDeep(fetched));
+        if (productError) {
+          toast.error(`Error loading product: ${productError.message}`);
+          navigate('/admin/products');
+          return; // Stop execution if product fetch fails
         }
+
+        // Fetch relations separately
+        const [catLinks, colLinks, tagLinks] = await Promise.all([
+           supabase.from('product_categories').select('category_id').eq('product_id', id),
+           supabase.from('product_to_collection').select('collection_id').eq('product_id', id),
+           supabase.from('product_tags').select('tag_id').eq('product_id', id)
+        ]);
+
+        // Check for errors in relation fetching (optional but good practice)
+        if (catLinks.error || colLinks.error || tagLinks.error) {
+             console.error("Error fetching product relations:", catLinks.error || colLinks.error || tagLinks.error);
+             toast.warning("Could not load all product relations (categories/tags/collections).");
+             // Continue loading the product, but relations might be incomplete
+        }
+
+        const fetched = {
+            ...productData,
+            variants: productData.variants || [], // Ensure variants is always an array
+            categories: catLinks.data?.map((c: any) => c.category_id) || [], // Use fetched relation data
+            collections: colLinks.data?.map((c: any) => c.collection_id) || [], // Use fetched relation data
+            tags: tagLinks.data?.map((t: any) => t.tag_id) || [], // Use fetched relation data
+        };
+        setProduct(fetched);
+        setInitialProduct(_.cloneDeep(fetched));
       };
       Promise.all([fetchProduct(), fetchRelatedData()]).finally(() => setLoading(false));
     } else {
+      // New product setup remains the same
       const newProductData = {
         id: uuidv4(), name: '', description: '', features: null, care_instructions: defaultCareInstructions,
         processing_times: 'Usually ships in 3-5 business days.', base_price: 0, slug: '',
         sku_prefix: generateSkuPrefix(''), variants: [], images: [], quantity: 0, is_made_to_order: false,
         is_active: true, is_featured: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-        categories: [],
-        collections: [], tags: []
+        categories: [], collections: [], tags: []
       };
       setProduct(newProductData);
       setInitialProduct(_.cloneDeep(newProductData));
@@ -174,7 +198,7 @@ const ProductEditor = () => {
   };
 
   const handleAddNewItem = async (type: 'category' | 'tag' | 'collection', name: string) => {
-    if (!name) {
+    if (!name.trim()) {
       toast.warning(`Please enter a name for the new ${type}.`);
       return;
     }
@@ -183,20 +207,27 @@ const ProductEditor = () => {
     else if (type === 'tag') { table = 'tags'; payload = { name, slug: generateSlug(name) }; }
     else if (type === 'collection') { table = 'product_collections'; payload = { collection_name: name }; }
 
-    const { data, error } = await supabase.from(table).insert([payload]).select().single();
-    if (error) {
-      if (error.message.includes('duplicate key value violates unique constraint')) {
-        toast.error(`A ${type} with the name "${name}" already exists.`);
-      } else {
-        toast.error(`Error creating ${type}: ${error.message}.`);
+    // Add toast for adding process
+    const promise = supabase.from(table).insert([payload]).select().single();
+    toast.promise(promise, {
+      loading: `Adding new ${type}: "${name}"...`,
+      success: (result) => {
+          const data = result.data;
+          if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); }
+          else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); }
+          else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); }
+          return `Successfully added ${type}: "${name}"!`;
+      },
+      error: (error) => {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          return `A ${type} with the name "${name}" already exists.`;
+        }
+        return `Error creating ${type}: ${error.message}.`;
       }
-    } else if (data) {
-      toast.success(`Successfully added ${type}: "${name}".`);
-      if (type === 'category') { setCategories(prev => [...prev, data]); handleMultiSelectToggle('categories', data.id); }
-      else if (type === 'tag') { setExistingTags(prev => [...prev, data]); handleMultiSelectToggle('tags', data.id); }
-      else if (type === 'collection') { setCollections(prev => [...prev, data]); handleMultiSelectToggle('collections', data.id); }
-    }
+    });
   };
+
+  // Variant and Image handlers remain the same...
   const handleVariantChange = (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; newVariants[variantIndex] = { ...newVariants[variantIndex], [name]: value }; return { ...prev, variants: newVariants }; }); };
   const handleOptionChange = (variantIndex: number, optionIndex: number, e: React.ChangeEvent<HTMLInputElement>) => { if (!product) return; const { name, value, type } = e.target; setProduct(prev => { if (!prev) return null; const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex] = { ...newOptions[optionIndex], [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : (name === 'price_change' ? parseFloat(value) : value) }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; }); };
   const addMasterVariant = () => { if (!product) return; setProduct(prev => prev ? ({ ...prev, variants: [...prev.variants, { name: '', options: [] }] }) : null); };
@@ -206,65 +237,76 @@ const ProductEditor = () => {
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>, variantIndex?: number, optionIndex?: number) => { if (!product || !e.target.files) return; const file = e.target.files[0]; if (!file) return; const imageUrl = URL.createObjectURL(file); setProduct(prev => { if (!prev) return null; if (variantIndex !== undefined && optionIndex !== undefined) { const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; const newImages = [...(newOptions[optionIndex].images || []), imageUrl]; newOptions[optionIndex] = { ...newOptions[optionIndex], images: newImages }; newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; } else { return { ...prev, images: [...prev.images, imageUrl] }; } }); };
   const handleImageRemove = (imageToRemove: string, variantIndex?: number, optionIndex?: number) => { if (!product) return; setProduct(prev => { if (!prev) return null; if (variantIndex !== undefined && optionIndex !== undefined) { const newVariants = [...prev.variants]; const newOptions = [...newVariants[variantIndex].options]; newOptions[optionIndex].images = (newOptions[optionIndex].images || []).filter(img => img !== imageToRemove); newVariants[variantIndex] = { ...newVariants[variantIndex], options: newOptions }; return { ...prev, variants: newVariants }; } else { return { ...prev, images: prev.images.filter(img => img !== imageToRemove) }; } }); };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product || !product.name) { toast.error("Product name is required."); return; }
     setIsSaving(true);
 
-    // --- **CRITICAL FIX**: Destructure 'categories' AND 'variants' out of the payload ---
+    // Destructure all relational arrays and variants out of the main payload
     const { collections, tags, categories, variants, ...payload } = product;
-    payload.slug = generateSlug(payload.name); payload.updated_at = new Date().toISOString();
+    payload.slug = generateSlug(payload.name);
+    payload.updated_at = new Date().toISOString();
 
-    // Add variants data back into the payload under the correct field name if your table uses JSONB for variants.
-    // **IMPORTANT**: If your 'products' table *doesn't* have a 'variants' column (e.g., you handle variants in a separate 'product_variants' table),
-    // you should REMOVE the line below and handle variant saving separately after saving the main product.
-    // Assuming your 'products' table has a 'variants' JSONB column:
-    (payload as any).variants = variants; // Add variants back into the payload
+    // Add variants back if using JSONB column (adjust if using separate table)
+    (payload as any).variants = variants;
 
-
-    // If Made to Order, force quantity to null
+    // Force quantity to null if Made to Order
     if (payload.is_made_to_order) {
       payload.quantity = null;
     }
 
-    try {
-        const { data: savedProduct, error: productError } = id ? await supabase.from('products').update(payload).eq('id', product.id).select().single() : await supabase.from('products').insert(payload).select().single();
-        if (productError) throw productError;
-        if (!savedProduct) throw new Error("An unknown error occurred while saving the product.");
+    // Wrap the entire save process in a toast promise
+    const savePromise = new Promise(async (resolve, reject) => {
+      try {
+          const { data: savedProduct, error: productError } = id ? await supabase.from('products').update(payload).eq('id', product.id).select().single() : await supabase.from('products').insert(payload).select().single();
+          if (productError) throw productError;
+          if (!savedProduct) throw new Error("An unknown error occurred while saving the product.");
 
-        // Relational tables handling remains the same
-        const relationalTables = [
-          { name: 'product_categories', ids: categories, column: 'category_id' },
-          { name: 'product_to_collection', ids: collections, column: 'collection_id' },
-          { name: 'product_tags', ids: tags, column: 'tag_id' }
-        ];
+          const relationalTables = [
+            { name: 'product_categories', ids: categories, column: 'category_id' },
+            { name: 'product_to_collection', ids: collections, column: 'collection_id' },
+            { name: 'product_tags', ids: tags, column: 'tag_id' }
+          ];
 
-        for (const table of relationalTables) {
-            await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
-            if (table.ids.length > 0) {
-                const toInsert = table.ids.map(relId => ({ product_id: savedProduct.id, [table.column]: relId }));
-                const { error } = await supabase.from(table.name).insert(toInsert);
-                if (error) {
-                  // Provide more specific error for relational saves
-                  toast.error(`Error saving ${table.name.replace(/_/g, ' ')}: ${error.message}`);
-                  // Optionally throw the error again if you want to stop the whole process
-                  // throw new Error(`Error saving relationships for ${table.name}: ${error.message}`);
-                  continue; // Or continue to try saving other relations
-                }
-            }
-        }
-        toast.success(`Product "${savedProduct.name}" ${id ? 'updated' : 'created'} successfully!`);
-        setInitialProduct(_.cloneDeep(product)); // Update initial state
-        setIsDirty(false); // Reset dirty flag
-        navigate('/admin/products');
-    } catch (error: any) {
-        console.error("Save Error Details:", error); // Log the full error object
-        if (error.message.includes('duplicate key value violates unique constraint')) { toast.error("Save Failed: A product with this name or slug already exists.");
-        } else if (error.message.includes('violates foreign key constraint')) { toast.error(`Save Failed: A database relationship is incorrect (e.g., a selected category/tag/collection might no longer exist).`);
-        } else if (error.message.includes('violates check constraint') || error.code === '22P02') { // 22P02 is often invalid input syntax
-            toast.error(`Save Failed: A field (like price or quantity) has an invalid value.`);
-        } else { toast.error(`An unexpected database error occurred. Check console for details.`); }
-    } finally { setIsSaving(false); }
+          for (const table of relationalTables) {
+              await supabase.from(table.name).delete().eq('product_id', savedProduct.id);
+              if (table.ids.length > 0) {
+                  const toInsert = table.ids.map(relId => ({ product_id: savedProduct.id, [table.column]: relId }));
+                  const { error: relationError } = await supabase.from(table.name).insert(toInsert);
+                  if (relationError) {
+                      // Reject the promise with a specific message
+                      reject(new Error(`Error saving ${table.name.replace(/_/g, ' ')}: ${relationError.message}`));
+                      return; // Stop processing further relations on error
+                  }
+              }
+          }
+          resolve(savedProduct); // Resolve the promise with the saved product data
+      } catch (error) {
+          reject(error); // Reject the promise on any error during save
+      }
+    });
+
+    toast.promise(savePromise, {
+        loading: `${id ? 'Updating' : 'Creating'} product "${product.name}"...`,
+        success: (savedData: any) => {
+          setInitialProduct(_.cloneDeep(product)); // Update initial state
+          setIsDirty(false); // Reset dirty flag
+          setTimeout(() => navigate('/admin/products'), 1000); // Navigate after a short delay
+          return `Product "${savedData.name}" ${id ? 'updated' : 'created'} successfully!`;
+        },
+        error: (error: any) => {
+          console.error("Save Error Details:", error); // Log the full error
+          setIsSaving(false); // Ensure saving state is reset on error
+          if (error.message.includes('duplicate key value violates unique constraint')) { return "Save Failed: A product with this name or slug already exists.";
+          } else if (error.message.includes('violates foreign key constraint')) { return `Save Failed: A database relationship is incorrect.`;
+          } else if (error.message.includes('violates check constraint') || error.code === '22P02') { return `Save Failed: A field (like price or quantity) has an invalid value.`;
+          } else if (error.message.includes('Error saving')) { return error.message; // Show specific relation error
+          } else { return `An unexpected database error occurred: ${error.message}. Check console for details.`; }
+        },
+    });
+
+    // We don't need setIsSaving(false) here anymore as the toast handles it
   };
 
   if (loading || !product) { return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-gray-500" /><p className="ml-4">Loading Product Editor...</p></div>; }
@@ -299,7 +341,7 @@ const ProductEditor = () => {
                     </CardContent>
                 </Card>
 
-                {/* --- ADDED: Inventory Card --- */}
+                {/* --- Inventory Card --- */}
                 <Card className="shadow-sm">
                     <CardHeader><CardTitle className="flex items-center gap-2"><Warehouse className="h-5 w-5 text-[#ddb866]" />Inventory</CardTitle></CardHeader>
                     <CardContent className="space-y-6 pt-6">
@@ -334,7 +376,7 @@ const ProductEditor = () => {
 
                 <Card className="shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5 text-[#ddb866]" />Organization</CardTitle></CardHeader>
                     <CardContent className="space-y-8 pt-6">
-                        {/* --- MODIFIED: Replaced Popover with TaxonomyManager for Categories --- */}
+                        {/* --- Categories Taxonomy Manager --- */}
                         <TaxonomyManager title="Categories" items={categories} selectedIds={product.categories} onToggle={(id) => handleMultiSelectToggle('categories', id)} onAdd={(name) => handleAddNewItem('category', name)} placeholder="Create a new category..."/>
                         <TaxonomyManager title="Collections" items={collections.map(c => ({ id: c.id, name: c.collection_name }))} selectedIds={product.collections} onToggle={(id) => handleMultiSelectToggle('collections', id)} onAdd={(name) => handleAddNewItem('collection', name)} placeholder="Create a new collection..."/>
                         <TaxonomyManager title="Tags" items={existingTags} selectedIds={product.tags} onToggle={(id) => handleMultiSelectToggle('tags', id)} onAdd={(name) => handleAddNewItem('tag', name)} placeholder="Create a new tag..."/>
