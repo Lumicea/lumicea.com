@@ -63,7 +63,7 @@ export function Header({ showTopBanner = true }: HeaderProps) {
           'fixed top-0 z-50 w-full transition-all duration-500',
           isScrolled
             ? 'bg-white/98 backdrop-blur-xl shadow-2xl border-b border-gray-200/50'
-            : 'bg-transparent'
+            : 'bg-lumicea-navy/70 backdrop-blur-md'
         )}
       >
         {showTopBanner && (
@@ -356,6 +356,7 @@ export function Header({ showTopBanner = true }: HeaderProps) {
                                     className="w-full lumicea-button-primary"
                                   >
                                     <Link to="/admin">Admin Dashboard</Link>
+
                                   </Button>
                                 </SheetClose>
                               </div>
